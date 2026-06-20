@@ -1,0 +1,13 @@
+node_modules/
+.next/
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+*.db
+.env
+.env.local
+runtime/
+data/generated/*
+!data/generated/.gitkeep
+

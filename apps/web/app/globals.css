@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --background: #f4f5f2;
+  --surface: #ffffff;
+  --surface-subtle: #f8f9f7;
+  --border: #dfe2dc;
+  --border-strong: #cbd0c9;
+  --text: #1a201d;
+  --muted: #68716c;
+  --brand: #174a38;
+  --brand-hover: #103b2c;
+  --amber: #8a5b12;
+  --amber-bg: #fff6df;
+  --red: #9b2c2c;
+  --red-bg: #fff0f0;
+  --green: #246b4e;
+  --green-bg: #eaf6ef;
+}
+
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, textarea, select { font: inherit; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid rgba(23, 74, 56, .35);
+  outline-offset: 1px;
+}
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: #cbd0c9; border: 2px solid transparent; background-clip: padding-box; border-radius: 8px; }
+
+@layer components {
+  .panel { @apply rounded-panel border border-line bg-white shadow-panel; }
+  .panel-header { @apply flex min-h-11 items-center justify-between border-b border-line px-3; }
+  .eyebrow { @apply text-[11px] font-semibold uppercase tracking-[.08em] text-muted; }
+  .table-head { @apply h-9 whitespace-nowrap border-b border-line bg-[#f7f8f6] px-3 text-left text-[11px] font-semibold uppercase tracking-[.045em] text-[#5f6963]; }
+  .table-cell { @apply h-10 whitespace-nowrap border-b border-[#eceeea] px-3 text-[12px] text-[#313934]; }
+}
+
