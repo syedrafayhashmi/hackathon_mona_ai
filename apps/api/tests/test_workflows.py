@@ -92,11 +92,13 @@ def test_future_dated_permit_without_employment_permission_is_denied():
         "requires_approval": True,
     }
 
-    result, confidence, *_ = workflows.result_from_agent_payload("3", payload)
+    result, confidence, decision, _ = workflows.result_from_agent_payload("3", payload)
 
     assert result.table.rows[0]["Outcome"] == "Denied"
     assert result.table.rows[0]["Confidence"] == "85%"
     assert confidence == 0.85
+    assert decision == "Denied"
+    assert result.review["decision"] == "Permit outcome: Denied"
 
 
 def test_product_gap_prompt_uses_complete_catalogue_and_exact_grid():

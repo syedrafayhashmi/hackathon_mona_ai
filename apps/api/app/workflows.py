@@ -728,7 +728,11 @@ def result_from_agent_payload(
     evidence = list(agent_output.evidence)
     decision = agent_output.decision
     review = agent_output.review.model_dump()
-    if problem_id == "9" and static_gap_source:
+    if problem_id == "3":
+        outcomes = {str(row["Outcome"]) for row in agent_output.rows}
+        decision = next(iter(outcomes)) if len(outcomes) == 1 else "Review permit outcomes"
+        review["decision"] = f"Permit outcome: {decision}"
+    elif problem_id == "9" and static_gap_source:
         top = agent_output.rows[0]
         summary = (
             f"Validated {len(agent_output.rows)} competitor-present, Allgäuer-absent need × format "
