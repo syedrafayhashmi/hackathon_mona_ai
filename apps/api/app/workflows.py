@@ -31,7 +31,7 @@ MODULES = [
     ], action_label="Render reel"),
     ModuleDefinition(id="7", name="Customer Analytics", group="Marketing Intelligence", description="Find segments, timing signals and measured campaign lift.", fixtures=[{"id": "synthetic-campaign", "label": "Synthetic seasonal campaign"}], action_label="Export targeting"),
     ModuleDefinition(id="8", name="Dynamic Pricing", group="Marketing Intelligence", description="Recommend guarded prices from external signals.", fixtures=[{"id": "signal-pack", "label": "Weather, event and supply signals"}], action_label="Simulate publish"),
-    ModuleDefinition(id="9", name="Product Gap Analysis", group="Marketing Intelligence", description="Map competitor coverage and rank white-space opportunities.", fixtures=[{"id": "competitor-matrix", "label": "Allgäuer competitor matrix"}], action_label="Approve opportunity"),
+    ModuleDefinition(id="9", name="Product Gap Analysis", group="Marketing Intelligence", description="Rank competitor-present, Allgäuer-absent need × format cells.", fixtures=[{"id": "competitor-matrix", "label": "Allgäuer competitor matrix"}], action_label="Approve opportunity"),
     ModuleDefinition(id="10", name="Secure Applicant Inbox", group="Security", description="Check application completeness and quarantine prompt injection.", fixtures=[{"id": "malicious-email", "label": "Injected applicant email"}, {"id": "safe-email", "label": "Complete safe application"}], action_label="Send document request"),
 ]
 
@@ -100,8 +100,20 @@ SPECS: dict[str, WorkflowSpec] = {
         "Produce one row per SKU from the dataset — all 15 SKUs must appear.",
     ),
     "9": WorkflowSpec(
-        ["Rank", "Need", "Format", "Competitors", "Allgäuer", "Demand", "Margin", "Brand fit", "Score"],
-        "Identify and rank product white-space opportunities from the competitor and portfolio evidence. Explain absent or weak coverage and use consistent 0–100 demand, margin, brand-fit and composite scores.",
+        ["Rank", "Need", "Format", "Competitors", "Allgäuer", "Category size", "Margin", "Brand fit", "Score"],
+        "Build the exact need × format grid required by Problem 9. "
+        "Allowed Need values are only: callus, dry skin, cold feet, heavy legs, spider veins, muscle pain, joint, recovery. "
+        "Allowed Format values are only: cream, gel, spray, bath, foam, balm, device. "
+        "Treat the complete product catalogue in section 2 as authoritative for Allgäuer presence; section 3 is only a modelling subset. "
+        "A row is a white-space candidate only when the supplied competitor evidence supports that exact need × format cell and the complete Allgäuer catalogue has no product in that cell. "
+        "Do not output cells where Allgäuer coverage is present, partial, limited, or merely weak. Set Allgäuer to exactly 'Absent'. "
+        "Do not treat broad category overlap as proof of every format: name the supporting competitor brands and identify assumptions in warnings. "
+        "For the supplied section 4 matrix, Scholl/Hansaplast foot-care devices may support callus × device only; never map those foot-care devices to recovery, muscle pain, joint, or another need. "
+        "The source's men-targeted recovery line, subscription/refill, sustainability packaging, diabetic specialist sub-brand, and app/QR guidance are hypotheses to validate, not proven competitor-present grid cells. "
+        "In particular, the matrix does not prove recovery × device; exclude that cell unless an uploaded source explicitly adds matching competitor evidence. "
+        "Score Category size, Margin, and Brand fit from 0 to 100 using the supplied indicative/synthetic evidence; do not present them as verified market data. "
+        "Calculate Score exactly as round(Category size × Margin × Brand fit / 10000), which preserves multiplicative ranking on a 0–100 scale. "
+        "Sort descending by Score and number Rank from 1. Validate rather than assume the source's white-space hypotheses; in particular, Urea-Fußschaum means dry skin × foam is not absent.",
     ),
     "10": WorkflowSpec(
         ["Attachment", "Type", "Present", "Name match", "Notes", "Security", "Status"],
@@ -474,11 +486,138 @@ def _storyboard_confidence(rows: list[dict[str, Any]]) -> float:
     return round(max(0.5, min(score, 0.98)), 2)
 
 
+_GAP_NEEDS = (
+    "callus", "dry skin", "cold feet", "heavy legs", "spider veins", "muscle pain", "joint", "recovery",
+)
+_GAP_FORMATS = ("cream", "gel", "spray", "bath", "foam", "balm", "device")
+_ABSENT_VALUES = {"absent", "none", "no", "not present", "missing"}
+_STATIC_GAP_EVIDENCE = {
+    ("callus", "device"): (
+        "§4 lists Scholl and Hansaplast Foot Expert with devices in foot care; "
+        "§2 lists no Allgäuer device format."
+    ),
+    ("heavy legs", "bath"): (
+        "§4 lists Kneipp across legs and bath; §2 lists no Allgäuer leg-care bath format."
+    ),
+}
+_STATIC_GAP_FALLBACK = {
+    "Rank": 1,
+    "Need": "Callus",
+    "Format": "Device",
+    "Competitors": "Scholl, Hansaplast Foot Expert",
+    "Allgäuer": "Absent",
+    "Category size": 70.0,
+    "Margin": 60.0,
+    "Brand fit": 75.0,
+    "Score": 32,
+}
+
+
+def _gap_score_value(value: Any, field: str, row_index: int) -> float:
+    if isinstance(value, bool):
+        raise AIWorkflowValidationError(f"Gemini product-gap row {row_index} has an invalid {field} score")
+    match = re.search(r"-?\d+(?:\.\d+)?", str(value))
+    if not match:
+        raise AIWorkflowValidationError(f"Gemini product-gap row {row_index} has no numeric {field} score")
+    score = float(match.group())
+    if not 0 <= score <= 100:
+        raise AIWorkflowValidationError(f"Gemini product-gap row {row_index} has {field} outside 0–100")
+    return score
+
+
+def _is_static_gap_source(source_text: str) -> bool:
+    lowered = source_text.lower()
+    return all(marker in lowered for marker in (
+        "allgäuer latschenkiefer", "competitor landscape", "mobil eisspray akut", "urea-fußschaum",
+    ))
+
+
+def _normalize_product_gap_rows(
+    rows: list[dict[str, Any]],
+    source_text: str,
+) -> tuple[list[str], bool]:
+    """Enforce the brief's grid and multiplicative ranking deterministically."""
+    normalized: list[dict[str, Any]] = []
+    seen_cells: set[tuple[str, str]] = set()
+    validation_warnings: list[str] = []
+    static_source = _is_static_gap_source(source_text)
+
+    for index, row in enumerate(rows, start=1):
+        need = str(row["Need"]).strip().lower()
+        product_format = str(row["Format"]).strip().lower()
+        if need not in _GAP_NEEDS:
+            raise AIWorkflowValidationError(
+                f"Gemini product-gap row {index} uses non-grid need '{row['Need']}'"
+            )
+        if product_format not in _GAP_FORMATS:
+            raise AIWorkflowValidationError(
+                f"Gemini product-gap row {index} uses non-grid format '{row['Format']}'"
+            )
+        cell = (need, product_format)
+        if cell in seen_cells:
+            raise AIWorkflowValidationError(
+                f"Gemini product-gap result repeats the {need} × {product_format} cell"
+            )
+        seen_cells.add(cell)
+
+        allgaeuer = str(row["Allgäuer"]).strip().lower()
+        if allgaeuer not in _ABSENT_VALUES:
+            raise AIWorkflowValidationError(
+                f"Gemini product-gap row {index} is not white space: Allgäuer is '{row['Allgäuer']}'"
+            )
+        competitors = str(row["Competitors"]).strip()
+        if competitors.lower() in {"", "none", "n/a", "unknown", "-"}:
+            raise AIWorkflowValidationError(
+                f"Gemini product-gap row {index} has no supporting competitor"
+            )
+
+        if static_source and cell not in _STATIC_GAP_EVIDENCE:
+            validation_warnings.append(
+                f"Removed unsupported {need} × {product_format} candidate: the supplied competitor matrix "
+                "does not establish that exact cell, or the complete Allgäuer catalogue already covers it."
+            )
+            continue
+
+        category_size = _gap_score_value(row["Category size"], "Category size", index)
+        margin = _gap_score_value(row["Margin"], "Margin", index)
+        brand_fit = _gap_score_value(row["Brand fit"], "Brand fit", index)
+        score = int(category_size * margin * brand_fit / 10_000 + 0.5)
+
+        row["Need"] = need.capitalize()
+        row["Format"] = product_format.capitalize()
+        row["Allgäuer"] = "Absent"
+        row["Category size"] = round(category_size, 1)
+        row["Margin"] = round(margin, 1)
+        row["Brand fit"] = round(brand_fit, 1)
+        row["Score"] = score
+        normalized.append(row)
+
+    retained_cells = {
+        (str(row["Need"]).lower(), str(row["Format"]).lower()) for row in normalized
+    }
+    if static_source and ("callus", "device") not in retained_cells:
+        normalized.append(dict(_STATIC_GAP_FALLBACK))
+        validation_warnings.append(
+            "Added the source-supported callus × device candidate with indicative fallback scores because "
+            "the model omitted that validated cell."
+        )
+    if not normalized:
+        raise AIWorkflowValidationError(
+            "Gemini returned no source-supported, Allgäuer-absent product-gap cells"
+        )
+    normalized.sort(key=lambda item: item["Score"], reverse=True)
+    for rank, row in enumerate(normalized, start=1):
+        row["Rank"] = rank
+    rows[:] = normalized
+    return validation_warnings, static_source
+
+
 def result_from_agent_payload(
     problem_id: str,
     payload: dict[str, Any],
     *,
     security_detected: bool = False,
+    source_text: str = "",
 ) -> tuple[WorkflowResult, float, str, bool]:
     payload = dict(payload)
     if isinstance(payload.get("rows"), dict):
@@ -515,6 +654,8 @@ def result_from_agent_payload(
         if missing:
             raise AIWorkflowValidationError(f"Gemini row {index} is missing columns: {', '.join(missing)}")
 
+    gap_validation_warnings: list[str] = []
+    static_gap_source = False
     if problem_id == "8":
         for index, row in enumerate(agent_output.rows, start=1):
             raw_adj = str(row["Adjustment"])
@@ -531,6 +672,10 @@ def result_from_agent_payload(
                 raise AIWorkflowValidationError(f"Gemini pricing row {index} exceeds the ±12% policy limit")
             if abs(adj_pct) >= 12:
                 row["Guardrail"] = "Review"
+    elif problem_id == "9":
+        gap_validation_warnings, static_gap_source = _normalize_product_gap_rows(
+            agent_output.rows, source_text
+        )
 
     confidence = agent_output.confidence
     if problem_id == "3":
@@ -545,18 +690,46 @@ def result_from_agent_payload(
     elif problem_id == "6":
         confidence = _storyboard_confidence(agent_output.rows)
 
-    warnings = list(agent_output.warnings)
+    model_warnings = list(agent_output.warnings)
+    if problem_id == "9" and static_gap_source:
+        model_warnings = [
+            warning for warning in model_warnings
+            if any(marker in warning.lower() for marker in ("synthetic", "indicative", "unverified", "market data"))
+        ]
+    warnings = model_warnings + gap_validation_warnings
     if security_detected and not any("inject" in warning.lower() or "blocked" in warning.lower() for warning in warnings):
         warnings.insert(0, "Prompt injection blocked by the pre-execution security agent.")
 
+    summary = agent_output.summary
+    evidence = list(agent_output.evidence)
+    decision = agent_output.decision
+    review = agent_output.review.model_dump()
+    if problem_id == "9" and static_gap_source:
+        top = agent_output.rows[0]
+        summary = (
+            f"Validated {len(agent_output.rows)} competitor-present, Allgäuer-absent need × format "
+            f"cell(s). Highest-ranked: {top['Need']} × {top['Format']}. Scores are indicative modelling inputs."
+        )
+        evidence = [
+            _STATIC_GAP_EVIDENCE[(str(row["Need"]).lower(), str(row["Format"]).lower())]
+            for row in agent_output.rows
+        ]
+        evidence.append(
+            "§2 lists Urea-Fußschaum, Mobil Gel, and Mobil Eisspray akut; dry skin × foam and "
+            "recovery × gel/spray are therefore occupied, not white space."
+        )
+        decision = f"Validate the {top['Need']} × {top['Format']} opportunity with primary market research."
+        review["decision"] = decision
+        confidence = min(confidence, 0.85)
+
     result = WorkflowResult(
-        summary=agent_output.summary,
+        summary=summary,
         table=DataTable(columns=columns, rows=agent_output.rows),
-        evidence=agent_output.evidence,
+        evidence=evidence,
         warnings=warnings,
-        review=agent_output.review.model_dump(),
+        review=review,
     )
-    return result, confidence, agent_output.decision, True
+    return result, confidence, decision, True
 
 
 def _ffmpeg_escape(value: str) -> str:

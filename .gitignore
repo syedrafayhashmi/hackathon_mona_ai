@@ -14,3 +14,5 @@ data/generated/*
 graphify-out
 .graphify-cache
 .graphify_root
+
+tmp/

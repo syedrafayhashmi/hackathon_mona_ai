@@ -111,6 +111,7 @@ def node_validate(state: WorkflowState) -> dict[str, Any]:
         task.problem_id,
         state["agent_payload"],
         security_detected=state.get("security_detected", False),
+        source_text=task.source_text,
     )
     return {
         "result": result,

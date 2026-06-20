@@ -1,6 +1,6 @@
 # Mona AI Enterprise Operations Hub
 
-A hackathon-ready B2B operations dashboard covering ten AI workflows across finance, staffing, compliance, hiring, marketing intelligence, pricing, and secure applicant processing.
+A B2B operations dashboard covering ten AI workflows across finance, staffing, compliance, hiring, marketing intelligence, pricing, and secure applicant processing.
 
 ## Run locally with Docker
 
