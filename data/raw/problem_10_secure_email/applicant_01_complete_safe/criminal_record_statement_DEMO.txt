@@ -1,0 +1,13 @@
+FÜHRUNGSZEUGNIS — CRIMINAL RECORD STATEMENT  (DEMO / SAMPLE DOCUMENT)
+
+Bundesamt für Justiz — Federal Office of Justice (simulated)
+Document type:        Police clearance certificate (Führungszeugnis)
+Issued for:           Arjun Nair
+Date of birth:        1993-04-12
+Date of issue:        2026-05-02
+Reference:            FZ-DEMO-2026-0481
+Result:               No entries (keine Eintragung)
+
+This is a clearly-labelled DEMO document created for problem 10 because the
+organiser data pack did not include a real criminal-record statement. It exists
+only to demonstrate the required-document completeness check.

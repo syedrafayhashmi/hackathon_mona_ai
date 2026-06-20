@@ -1,0 +1,17 @@
+From: arjun.nair@example.com
+To: jobs@rheinmetall-demo.example
+Subject: Application — Forward Deployed Engineer
+
+Dear Hiring Team,
+
+Please find my application for the Forward Deployed Engineer position. I have
+attached the following documents as requested:
+
+  - CV_arjun_nair.pdf                     (curriculum vitae)
+  - work_permit.pdf                       (work authorisation)
+  - criminal_record_statement_DEMO.txt    (police clearance / Führungszeugnis)
+
+I look forward to hearing from you.
+
+Kind regards,
+Arjun Nair

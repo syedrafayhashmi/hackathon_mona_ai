@@ -49,6 +49,12 @@ class AgentWorkflowOutput(BaseModel):
     requires_approval: bool = True
 
 
+class FileStatus(BaseModel):
+    name: str
+    status: Literal["pending", "processing", "completed", "failed"] = "pending"
+    detail: str = ""
+
+
 class RunRecord(BaseModel):
     id: str
     problem_id: str
@@ -57,6 +63,7 @@ class RunRecord(BaseModel):
     status: Literal["completed", "approved", "actioned", "blocked", "failed"] = "completed"
     confidence: float = 0.0
     source_mode: Literal["deterministic", "gemini", "fallback"] = "deterministic"
+    agent_generated: bool = False
     model_usage: list[str] = []
     decision: str
     requires_approval: bool = True
@@ -64,6 +71,7 @@ class RunRecord(BaseModel):
     created_at: str = Field(default_factory=now_iso)
     result: WorkflowResult
     audit_events: list[AuditEvent]
+    file_statuses: list[FileStatus] = []
 
 
 class ModuleDefinition(BaseModel):

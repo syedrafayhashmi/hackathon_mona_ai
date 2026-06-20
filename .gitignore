@@ -11,3 +11,6 @@ runtime/
 data/generated/*
 !data/generated/.gitkeep
 
+graphify-out
+.graphify-cache
+.graphify_root

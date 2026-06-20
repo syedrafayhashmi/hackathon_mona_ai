@@ -15,12 +15,12 @@ export const api = {
   modules: () => request<ModuleDefinition[]>("/api/modules"),
   runs: () => request<RunRecord[]>("/api/runs"),
   health: () => request<Health>("/health"),
-  createRun: (problemId: string, fixtureId: string, file?: File) => {
+  createRun: (problemId: string, fixtureId: string, files?: File[], message?: string) => {
     const form = new FormData();
     form.set("problem_id", problemId);
     form.set("fixture_id", fixtureId);
-    form.set("form_data", "{}");
-    if (file) form.set("file", file);
+    form.set("form_data", message ? JSON.stringify({ message }) : "{}");
+    (files ?? []).forEach((f) => form.append("files", f));
     return request<RunRecord>("/api/runs", { method: "POST", body: form });
   },
   approve: (id: string) => request<RunRecord>(`/api/runs/${id}/approve`, { method: "POST" }),

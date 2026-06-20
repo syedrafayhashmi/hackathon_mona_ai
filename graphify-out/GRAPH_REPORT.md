@@ -1,12 +1,18 @@
-# Graph Report - .  (2026-06-20)
+# Graph Report - hackathon_problems_20260620  (2026-06-20)
 
 ## Corpus Check
-- Large corpus: 61 files · ~553,515 words. Semantic extraction will be expensive (many Claude tokens). Consider running on a subfolder.
+- 31 files · ~554,841 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 11 nodes · 0 edges · 11 communities (0 shown, 11 thin omitted)
-- Extraction: 0% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
+- 269 nodes · 594 edges · 17 communities (13 shown, 4 thin omitted)
+- Extraction: 82% EXTRACTED · 18% INFERRED · 0% AMBIGUOUS · INFERRED: 107 edges (avg confidence: 0.5)
 - Token cost: 0 input · 0 output
+
+## Graph Freshness
+- Built from commit: `20d41b55`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - [[_COMMUNITY_Community 0|Community 0]]
@@ -20,34 +26,98 @@
 - [[_COMMUNITY_Community 8|Community 8]]
 - [[_COMMUNITY_Community 9|Community 9]]
 - [[_COMMUNITY_Community 10|Community 10]]
+- [[_COMMUNITY_Community 11|Community 11]]
+- [[_COMMUNITY_Community 15|Community 15]]
+- [[_COMMUNITY_Community 16|Community 16]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `RootLayout` - 0 edges
-2. `Home` - 0 edges
-3. `ButtonProps` - 0 edges
-4. `Separator` - 0 edges
-5. `ScrollArea` - 0 edges
-6. `SheetContent` - 0 edges
-7. `ModuleDefinition` - 0 edges
-8. `AuditEvent` - 0 edges
-9. `RunRecord` - 0 edges
-10. `Health` - 0 edges
+1. `AuditEvent` - 33 edges
+2. `WorkflowResult` - 20 edges
+3. `FileStatus` - 20 edges
+4. `AIWorkflowValidationError` - 20 edges
+5. `DataTable` - 16 edges
+6. `compilerOptions` - 16 edges
+7. `AgentTask` - 15 edges
+8. `merge_file_results()` - 15 edges
+9. `RunRecord` - 13 edges
+10. `AgentWorkflowOutput` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
-- None detected - all connections are within the same source files.
+- `WorkflowState` --uses--> `WorkflowResult`  [INFERRED]
+  apps/api/app/graph.py → apps/api/app/models.py
+- `Any` --uses--> `WorkflowResult`  [INFERRED]
+  apps/api/app/graph.py → apps/api/app/models.py
+- `AgentTask` --uses--> `WorkflowResult`  [INFERRED]
+  apps/api/app/graph.py → apps/api/app/models.py
+- `FastAPI` --uses--> `AuditEvent`  [INFERRED]
+  apps/api/app/main.py → apps/api/app/models.py
+- `FastAPI` --uses--> `FileStatus`  [INFERRED]
+  apps/api/app/main.py → apps/api/app/models.py
 
 ## Import Cycles
-- None detected.
+- 1-file cycle: `apps/api/app/main.py -> apps/api/app/main.py`
 
-## Communities (11 total, 11 thin omitted)
+## Communities (17 total, 4 thin omitted)
+
+### Community 1 - "Community 1"
+Cohesion: 0.08
+Nodes (30): CaseSummary, Dashboard(), fallbackModules, iconMap, ModuleWorkspace(), OperationsHub(), statusTone(), valueCell() (+22 more)
+
+### Community 2 - "Community 2"
+Cohesion: 0.11
+Nodes (37): GeminiGenerationError, GeminiRateLimitError, GeminiUnavailableError, Raised when Gemini returns 429 / RESOURCE_EXHAUSTED after all retries., approve_run(), artifact(), create_run(), _gather_and_merge() (+29 more)
+
+### Community 3 - "Community 3"
+Cohesion: 0.23
+Nodes (24): AgentReview, AgentWorkflowOutput, DataTable, FileStatus, ModuleDefinition, WorkflowResult, AIWorkflowValidationError, merge_file_results() (+16 more)
+
+### Community 4 - "Community 4"
+Cohesion: 0.07
+Nodes (29): dependencies, class-variance-authority, clsx, lucide-react, next, @radix-ui/react-dialog, @radix-ui/react-dropdown-menu, @radix-ui/react-tabs (+21 more)
+
+### Community 5 - "Community 5"
+Cohesion: 0.10
+Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+11 more)
+
+### Community 6 - "Community 6"
+Cohesion: 0.32
+Nodes (16): AgentTask, _build_graph(), _get_graph(), node_intake(), node_review(), node_security(), node_solve(), node_validate() (+8 more)
+
+### Community 7 - "Community 7"
+Cohesion: 0.10
+Nodes (31): extract_text(), build_agent_task(), build_single_file_task(), build_single_upload_task(), _create_artifacts(), execute_workflow(), _ffmpeg_escape(), _fixture_source() (+23 more)
+
+### Community 8 - "Community 8"
+Cohesion: 0.25
+Nodes (7): Demo / pitch mode, Development, Gemini agent architecture, Mona AI Enterprise Operations Hub, Parallel batch processing, Rate-limit visibility (Docker logs), Run locally with Docker
+
+### Community 9 - "Community 9"
+Cohesion: 0.29
+Nodes (5): 1. Think Before Coding, 2. Simplicity First, 3. Surgical Changes, 4. Goal-Driven Execution, graphify
+
+### Community 15 - "Community 15"
+Cohesion: 0.16
+Nodes (10): _backoff_delay(), GeminiAdapter, _is_rate_limit(), Run one structured Gemini call with logging and bounded exponential backoff retr, _retry_after_seconds(), _short(), _status_code(), Any (+2 more)
 
 ## Knowledge Gaps
-- **11 isolated node(s):** `RootLayout`, `Home`, `ButtonProps`, `Separator`, `ScrollArea` (+6 more)
+- **65 isolated node(s):** `Any`, `metadata`, `iconMap`, `fallbackModules`, `CaseSummary` (+60 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **4 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **What connects `RootLayout`, `Home`, `ButtonProps` to the rest of the system?**
-  _11 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `AuditEvent` connect `Community 6` to `Community 2`, `Community 3`, `Community 7`?**
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
+- **Why does `execute_workflow()` connect `Community 7` to `Community 2`, `Community 6`?**
+  _High betweenness centrality (0.012) - this node is a cross-community bridge._
+- **Why does `AIWorkflowValidationError` connect `Community 3` to `Community 2`, `Community 6`, `Community 7`?**
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+- **Are the 18 inferred relationships involving `AuditEvent` (e.g. with `AgentTask` and `WorkflowState`) actually correct?**
+  _`AuditEvent` has 18 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 13 inferred relationships involving `WorkflowResult` (e.g. with `AgentTask` and `WorkflowState`) actually correct?**
+  _`WorkflowResult` has 13 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 15 inferred relationships involving `FileStatus` (e.g. with `AgentTask` and `AIWorkflowValidationError`) actually correct?**
+  _`FileStatus` has 15 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 11 inferred relationships involving `AIWorkflowValidationError` (e.g. with `AgentWorkflowOutput` and `AuditEvent`) actually correct?**
+  _`AIWorkflowValidationError` has 11 INFERRED edges - model-reasoned connections that need verification._

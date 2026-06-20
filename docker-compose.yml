@@ -3,17 +3,12 @@ services:
     build: ./apps/api
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-models/gemini-3.5-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-}
       GEMINI_FAST_MODEL: ${GEMINI_FAST_MODEL:-models/gemini-3.1-flash-lite}
       GEMINI_IMAGE_MODEL: ${GEMINI_IMAGE_MODEL:-models/gemini-3.1-flash-image}
-      GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-models/gemini-embedding-2}
-      # LangChain / Anthropic
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-6}
-      # LangSmith observability (set LANGCHAIN_TRACING_V2=true to enable)
-      LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY:-}
-      LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-false}
-      LANGCHAIN_PROJECT: ${LANGCHAIN_PROJECT:-mona-ai-ops}
+      GEMINI_MAX_RETRIES: ${GEMINI_MAX_RETRIES:-4}
+      GEMINI_MAX_CONCURRENCY: ${GEMINI_MAX_CONCURRENCY:-5}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATA_ROOT: /workspace/data
       RUNTIME_ROOT: /workspace/runtime
     volumes:

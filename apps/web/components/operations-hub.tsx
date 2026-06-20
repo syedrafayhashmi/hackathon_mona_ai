@@ -8,11 +8,11 @@ import {
   Sparkles, Users, X, XCircle,
 } from "lucide-react";
 import * as React from "react";
-import { api } from "@/lib/api";
+import { api, API_URL } from "@/lib/api";
 import type { Health, ModuleDefinition, RunRecord } from "@/lib/types";
 import {
   Badge, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-  Input, ScrollArea, Select, Separator, Sheet, SheetContent,
+  Input, ScrollArea, Select, Separator, Sheet, SheetContent, Textarea,
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
@@ -42,18 +42,7 @@ const fallbackModules: ModuleDefinition[] = [
 }));
 
 // ── Seed data ──────────────────────────────────────────────────────────────────
-type SeedCase = { id: string; workflow: string; subject: string; owner: string; status: string; confidence: string; priority: string; risk: string; sla: string; module: string };
-
-const seedCases: SeedCase[] = [
-  { id: "APP-4182", workflow: "Secure Applicant Inbox", subject: "Suspicious application — Dr. T. Weber", owner: "Security", status: "Blocked", confidence: "99%", priority: "Critical", risk: "High", sla: "2m overdue", module: "10" },
-  { id: "SHIFT-0620", workflow: "Shift Replacement", subject: "ICU night shift — Felix Haddad sick", owner: "Staffing", status: "Pending", confidence: "99%", priority: "Critical", risk: "High", sla: "3h 14m", module: "2" },
-  { id: "INV-2026-B10", workflow: "Invoice Operations", subject: "10 pending supplier invoices", owner: "Finance Ops", status: "Review", confidence: "97%", priority: "High", risk: "Medium", sla: "48m left", module: "1" },
-  { id: "PERMIT-204", workflow: "Work Permits", subject: "4-document authorization review", owner: "Compliance", status: "Review", confidence: "99%", priority: "High", risk: "Medium", sla: "6h left", module: "3" },
-  { id: "PRICE-118", workflow: "Dynamic Pricing", subject: "Matchday + heatwave signal pack", owner: "Pricing", status: "Approval", confidence: "98%", priority: "High", risk: "Medium", sla: "1h left", module: "8" },
-  { id: "CV-0311", workflow: "CV & Certificate Validation", subject: "5 candidate submissions", owner: "Recruiting", status: "Review", confidence: "91%", priority: "Medium", risk: "Medium", sla: "Today 18:00", module: "4" },
-  { id: "INT-0507", workflow: "Interview Support", subject: "GTM Engineer — 3 candidates", owner: "HR", status: "Ready", confidence: "94%", priority: "Low", risk: "Low", sla: "Tomorrow", module: "5" },
-  { id: "GAP-002", workflow: "Product Gap Analysis", subject: "Allgäuer competitor matrix", owner: "Strategy", status: "Review", confidence: "92%", priority: "Medium", risk: "Low", sla: "EOW", module: "9" },
-];
+type CaseSummary = { id: string; workflow: string; subject: string; owner: string; status: string; confidence: string; priority: string; risk: string; sla: string; module: string };
 
 // ── Status / priority helpers ──────────────────────────────────────────────────
 function statusTone(value: string): "neutral" | "green" | "amber" | "red" | "blue" {
@@ -150,7 +139,11 @@ function SecureEmailPanel({ run }: { run: RunRecord }) {
                 </code>
               </div>
               <div className="grid grid-cols-3 gap-2">
-                {[["Threat class", "Data exfiltration", "text-[#9b2c2c]"], ["Detection point", "Pre-execution", ""], ["Data exposed", "None", "text-[#246b4e]"]].map(([label, val, cls]) => (
+                {[
+                  ["Risk", String(run.result.review.risk || "Review"), "text-[#9b2c2c]"],
+                  ["Detection point", "Pre-execution", ""],
+                  ["AI decision", run.decision, "text-[#246b4e]"],
+                ].map(([label, val, cls]) => (
                   <div key={label} className="rounded-[4px] border border-[#f0d4d4] bg-white p-2 text-[11px]">
                     <div className="text-muted mb-0.5">{label}</div>
                     <div className={cn("font-semibold", cls)}>{val}</div>
@@ -210,8 +203,8 @@ function SecureEmailPanel({ run }: { run: RunRecord }) {
           <div className="px-3 py-2.5 border-t border-[#f0d4d4] bg-[#fff5f5] rounded-b-[5px]">
             <div className="flex items-center gap-2 text-[11px] text-[#9b2c2c]">
               <XCircle size={12} />
-              <span className="font-medium">Application incomplete.</span>
-              <span>Criminal-record statement is missing. Contact applicant to resubmit via secure channel.</span>
+              <span className="font-medium">Security review required.</span>
+              <span>{run.result.summary}</span>
             </div>
           </div>
         )}
@@ -224,22 +217,7 @@ function SecureEmailPanel({ run }: { run: RunRecord }) {
           <Badge tone="green">Sanitized output</Badge>
         </div>
         <div className="p-3 space-y-1.5">
-          {(hasInjection
-            ? [
-                "Applicant name: Arjun Nair (inferred from CV filename; not cross-referenced with databases)",
-                "CV present: yes — type classification only, no content interpreted",
-                "Work permit present: yes — type classification only",
-                "Criminal record: not present — attachment containing injection was quarantined",
-                "No applicant database was queried during processing",
-              ]
-            : [
-                "All 3 required documents received and classified correctly",
-                "CV: present — type verified as résumé document",
-                "Work permit: present — permit type confirmed",
-                "Criminal record statement: present — document valid",
-                "Zero injection indicators found across all attachment text",
-              ]
-          ).map((fact) => (
+          {run.result.evidence.map((fact) => (
             <div key={fact} className="flex items-start gap-2 text-[12px]">
               <Check size={12} className="mt-0.5 shrink-0 text-[#2f805d]" />
               <span>{fact}</span>
@@ -254,6 +232,11 @@ function SecureEmailPanel({ run }: { run: RunRecord }) {
 // ── Specialized: Work Permit cards ────────────────────────────────────────────
 function WorkPermitPanel({ run }: { run: RunRecord }) {
   const docs = run.result.table.rows;
+  const outcomeCounts = docs.reduce<Record<string, number>>((counts, doc) => {
+    const outcome = String(doc["Outcome"] || "Unknown");
+    counts[outcome] = (counts[outcome] || 0) + 1;
+    return counts;
+  }, {});
   type Colors = { bg: string; border: string; text: string; bar: string };
   const colors: Record<string, Colors> = {
     Valid:   { bg: "#eaf6ef", border: "#badac9", text: "#246b4e", bar: "#2f805d" },
@@ -301,12 +284,77 @@ function WorkPermitPanel({ run }: { run: RunRecord }) {
         <div className="panel-header">
           <span className="font-semibold">Summary</span>
           <div className="flex gap-1.5">
-            {[["2 Valid", "green"], ["1 Expired", "red"], ["1 Denied", "amber"]].map(([label, tone]) => (
-              <Badge key={label} tone={tone as "green" | "red" | "amber"}>{label}</Badge>
+            {Object.entries(outcomeCounts).map(([outcome, count]) => (
+              <Badge key={outcome} tone={statusTone(outcome)}>{count} {outcome}</Badge>
             ))}
           </div>
         </div>
         <div className="p-3 text-[12px] text-muted leading-5">{run.result.summary}</div>
+      </div>
+    </div>
+  );
+}
+
+// ── Specialized: Shift replacement (action-taking outreach) ────────────────────
+function ShiftReplacementPanel({ run }: { run: RunRecord }) {
+  const rankOf = (r: Record<string, unknown>) => {
+    const d = String(r["Rank"] ?? "").replace(/[^0-9]/g, "");
+    return d ? parseInt(d, 10) : 99;
+  };
+  const rows = [...run.result.table.rows].sort((a, b) => rankOf(a) - rankOf(b));
+  const eligible = rows.filter((r) => /elig|ready|contact/i.test(String(r["Status"] || "")));
+  const contacted = rows.some((r) => /contact/i.test(String(r["Status"] || "")));
+  return (
+    <div className="space-y-3">
+      <div className="panel">
+        <div className="panel-header">
+          <div>
+            <span className="font-semibold">Shift replacement</span>
+            <span className="ml-2 text-[11px] text-muted">{rows.length} staff screened · {eligible.length} eligible</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge tone={contacted ? "green" : "amber"}>{contacted ? "Outreach sent" : "Awaiting outreach"}</Badge>
+            <Badge tone="green">{Math.round(run.confidence * 100)}% confidence</Badge>
+          </div>
+        </div>
+        <div className="space-y-2 p-3">
+          {rows.map((r, i) => {
+            const status = String(r["Status"] || "");
+            const isContacted = /contact/i.test(status);
+            const isEligible = /elig|ready|contact/i.test(status);
+            const outreach = String(r["Outreach"] || "");
+            return (
+              <div key={i} className="rounded-[5px] border p-3"
+                style={{ borderColor: isContacted ? "#2f805d" : "#dfe2dc", background: isContacted ? "#eaf6ef" : isEligible ? "#ffffff" : "#fafbf9" }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#eef2f0] text-[10px] font-bold text-[#33403a]">{String(r["Rank"] || i + 1)}</span>
+                    <div>
+                      <div className="text-[12px] font-semibold text-[#1a201d]">{String(r["Candidate"])}</div>
+                      <div className="text-[11px] text-muted">{String(r["Role"])} · {String(r["Unit"])}</div>
+                    </div>
+                  </div>
+                  <Badge tone={isContacted ? "green" : isEligible ? "blue" : "neutral"}>{status || "—"}</Badge>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+                  <div><span className="text-muted">Certifications: </span><span className="font-medium">{String(r["Certifications"])}</span></div>
+                  <div><span className="text-muted">Hours: </span><span className="font-medium">{String(r["Hours"])}</span></div>
+                </div>
+                <div className="mt-1 text-[11px]"><span className="text-muted">Fit: </span>{String(r["Fit"])}</div>
+                {outreach && (
+                  <div className="mt-2 rounded-[4px] border-l-2 p-2 text-[11px] leading-4"
+                    style={{ borderColor: "#2f805d", background: "#f5f8f6", color: "#33403a" }}>
+                    <span className="font-semibold">{isContacted ? "Sent: " : "Draft: "}</span>{outreach}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="panel">
+        <div className="panel-header"><span className="font-semibold">Summary</span></div>
+        <div className="p-3 text-[12px] leading-5 text-muted">{run.result.summary}</div>
       </div>
     </div>
   );
@@ -345,9 +393,49 @@ function InterviewPanel({ run }: { run: RunRecord }) {
   );
 }
 
+// ── Specialized: Parallel batch file processing ────────────────────────────────
+function BatchProcessingPanel({ run }: { run: RunRecord }) {
+  const files = run.file_statuses ?? [];
+  if (!files.length) return null;
+  const completed = files.filter((f) => f.status === "completed").length;
+  const failed = files.filter((f) => f.status === "failed").length;
+  return (
+    <div className="panel">
+      <div className="panel-header">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold">Parallel file processing</span>
+          <Badge tone="blue">{files.length} files · one Gemini agent each</Badge>
+        </div>
+        <div className="flex gap-1.5">
+          <Badge tone="green">{completed} completed</Badge>
+          {failed > 0 && <Badge tone="red">{failed} failed</Badge>}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 p-3">
+        {files.map((f) => (
+          <div key={f.name} className="flex items-center gap-2 rounded-[4px] border border-line bg-[#fafbf9] px-2.5 py-2">
+            {f.status === "completed" ? <Check size={13} className="shrink-0 text-[#2f805d]" />
+              : f.status === "failed" ? <XCircle size={13} className="shrink-0 text-[#c0392b]" />
+              : f.status === "processing" ? <Loader2 size={13} className="shrink-0 animate-spin text-[#8a5b12]" />
+              : <Clock size={13} className="shrink-0 text-muted" />}
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[12px] font-medium">{f.name}</div>
+              {f.detail && <div className="truncate text-[10px] text-muted">{f.detail}</div>}
+            </div>
+            <Badge tone={f.status === "completed" ? "green" : f.status === "failed" ? "red" : "amber"}>{f.status}</Badge>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-line px-3 py-2 text-[11px] text-muted">
+        Files dispatched concurrently to independent Gemini agents. One failed file does not stop the batch; results map back to each file.
+      </div>
+    </div>
+  );
+}
+
 // ── Dashboard ──────────────────────────────────────────────────────────────────
 function Dashboard({ runs, onNavigate, health }: { runs: RunRecord[]; onNavigate: (id: string) => void; health: Health | null }) {
-  const apiCases: SeedCase[] = runs.slice(0, 8).map((r) => ({
+  const apiCases: CaseSummary[] = runs.slice(0, 8).map((r) => ({
     id: r.id,
     workflow: r.module_name,
     subject: r.decision,
@@ -359,7 +447,7 @@ function Dashboard({ runs, onNavigate, health }: { runs: RunRecord[]; onNavigate
     sla: "Review",
     module: r.problem_id,
   }));
-  const cases = apiCases.length ? apiCases : seedCases;
+  const cases = apiCases;
 
   const blockedCount = cases.filter((c) => c.status.toLowerCase().includes("block")).length;
   const pendingCount = cases.filter((c) => ["review", "approval", "pending"].some((w) => c.status.toLowerCase().includes(w))).length;
@@ -367,21 +455,14 @@ function Dashboard({ runs, onNavigate, health }: { runs: RunRecord[]; onNavigate
   const actionedCount = runs.filter((r) => r.status === "actioned").length;
 
   const recentEvents = runs.flatMap((r) => r.audit_events.slice(-2).map((ev) => ({ ...ev, module: r.module_name }))).slice(0, 5);
-  const fallbackEvents: RunRecord["audit_events"] = [
-    { stage: "Security", title: "Injection quarantined", detail: "Malicious instruction isolated before any tool access or data query.", status: "blocked", at: "Just now" },
-    { stage: "Staffing", title: "4 nurses ranked", detail: "ICU qualified cover ready for coordinator approval.", status: "review", at: "3m ago" },
-    { stage: "Finance", title: "10 invoices extracted", detail: "Supplier invoices categorized and routed to departmental approvers.", status: "complete", at: "8m ago" },
-    { stage: "Compliance", title: "Work permits reviewed", detail: "2 valid, 1 expired, 1 denied — flagged for HR action.", status: "review", at: "12m ago" },
-  ];
-
   return (
     <div className="space-y-3 p-4">
       {/* KPI strip */}
       <div className="panel grid grid-cols-5 divide-x divide-line">
         {[
           ["Active cases", String(cases.length), "Across 10 workflows", ""],
-          ["Pending review", String(pendingCount || 4), "Operator action required", "text-[#8a5b12]"],
-          ["Security blocks", String(blockedCount || 1), "Injection quarantined", "text-[#9b2c2c]"],
+          ["Pending review", String(pendingCount), "Operator action required", "text-[#8a5b12]"],
+          ["Security blocks", String(blockedCount), "Injection quarantined", "text-[#9b2c2c]"],
           ["Approved today", String(approvedCount), "By human operators", "text-[#246b4e]"],
           ["Simulated actions", String(actionedCount), "No external system changed", ""],
         ].map(([label, value, note, cls]) => (
@@ -440,7 +521,7 @@ function Dashboard({ runs, onNavigate, health }: { runs: RunRecord[]; onNavigate
             <Badge tone="amber">Human review required</Badge>
           </div>
           <div className="divide-y divide-line">
-            {seedCases.slice(0, 5).map((item) => (
+            {cases.slice(0, 5).map((item) => (
               <button key={item.id} onClick={() => onNavigate(item.module)} className="flex w-full items-center justify-between px-3 py-2.5 text-left hover:bg-[#fafbf9]">
                 <div className="flex items-center gap-2.5">
                   <Badge tone={priorityTone(item.priority)} className="shrink-0">{item.priority}</Badge>
@@ -464,21 +545,21 @@ function Dashboard({ runs, onNavigate, health }: { runs: RunRecord[]; onNavigate
             <Activity size={14} className="text-muted" />
           </div>
           <div className="p-3">
-            <Timeline events={recentEvents.length ? recentEvents : fallbackEvents} />
+            <Timeline events={recentEvents} />
             <Separator className="my-3" />
             <div className="grid grid-cols-2 gap-2 text-[11px]">
               <div className="rounded-[4px] border border-line bg-[#fafbf9] p-2">
-                <span className="text-muted">LangChain / Claude</span>
+                <span className="text-muted">Gemini agent runtime</span>
                 <div className="mt-1 flex items-center gap-1.5 font-medium">
-                  <span className={cn("h-1.5 w-1.5 rounded-full", health?.langchain ? "bg-[#2f805d]" : "bg-[#c78d25]")} />
-                  {health?.langchain ? (health.models?.langchain_primary ?? "Claude connected") : "Deterministic fallback"}
+                  <span className={cn("h-1.5 w-1.5 rounded-full", health?.agents ? "bg-[#2f805d]" : "bg-[#c78d25]")} />
+                  {health?.agents ? (health.models?.agent ?? "Gemini connected") : "API key required"}
                 </div>
               </div>
               <div className="rounded-[4px] border border-line bg-[#fafbf9] p-2">
-                <span className="text-muted">LangSmith tracing</span>
+                <span className="text-muted">Execution strategy</span>
                 <div className="mt-1 flex items-center gap-1.5 font-medium">
-                  <span className={cn("h-1.5 w-1.5 rounded-full", health?.langsmith ? "bg-[#2f805d]" : "bg-[#8f9893]")} />
-                  {health?.langsmith ? "Traces streaming" : "Tracing off"}
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#2f805d]" />
+                  Parallel agents for batches · 1 call per doc
                 </div>
               </div>
             </div>
@@ -493,37 +574,57 @@ function Dashboard({ runs, onNavigate, health }: { runs: RunRecord[]; onNavigate
 function ModuleWorkspace({ module, latestRun, onRun, onApprove, onAction, running }: {
   module: ModuleDefinition;
   latestRun?: RunRecord;
-  onRun: (fixture: string, file?: File) => void;
+  onRun: (fixture: string, files?: File[], message?: string) => void;
   onApprove: (id: string) => void;
   onAction: (id: string) => void;
   running: boolean;
 }) {
   const [fixture, setFixture] = React.useState(module.fixtures[0]?.id || "default");
-  const [file, setFile] = React.useState<File | undefined>();
+  const [files, setFiles] = React.useState<File[]>([]);
+  const [message, setMessage] = React.useState("");
   const [reviewOpen, setReviewOpen] = React.useState(false);
-  React.useEffect(() => { setFixture(module.fixtures[0]?.id || "default"); setFile(undefined); }, [module.id, module.fixtures]);
+  React.useEffect(() => { setFixture(module.fixtures[0]?.id || "default"); setFiles([]); setMessage(""); }, [module.id, module.fixtures]);
 
   function renderResults(run: RunRecord) {
     if (module.id === "10") return <SecureEmailPanel run={run} />;
     if (module.id === "3") return <WorkPermitPanel run={run} />;
+    if (module.id === "2") return <ShiftReplacementPanel run={run} />;
     if (module.id === "5") return <InterviewPanel run={run} />;
     const rows = run.approved
       ? run.result.table.rows.map((row) => row.Status === "Review" ? { ...row, Status: "Approved" } : row)
       : run.result.table.rows;
+    const reel = module.id === "6" ? run.result.artifacts?.find((a: string) => a.endsWith(".mp4")) : undefined;
     return (
-      <div className="panel">
-        <div className="panel-header">
-          <div>
-            <span className="font-semibold">Case results</span>
-            <span className="ml-2 text-[11px] text-muted">{run.result.table.rows.length} records</span>
+      <div className="space-y-3">
+        {reel && (
+          <div className="panel">
+            <div className="panel-header">
+              <span className="font-semibold">Generated reel</span>
+              <Badge tone="blue">9:16 · 15s</Badge>
+            </div>
+            <div className="flex justify-center p-3">
+              <video
+                controls
+                className="max-h-[520px] rounded-[6px] bg-black"
+                src={`${API_URL}/api/runs/${run.id}/artifacts/${encodeURIComponent(reel)}`}
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {run.model_usage?.slice(0, 2).map((m) => <Badge key={m} tone="blue">{m.replace("models/", "")}</Badge>)}
-            <Badge tone={run.source_mode === "gemini" ? "blue" : "neutral"}>{run.source_mode}</Badge>
-            <Badge tone="green">{Math.round(run.confidence * 100)}% confidence</Badge>
+        )}
+        <div className="panel">
+          <div className="panel-header">
+            <div>
+              <span className="font-semibold">Case results</span>
+              <span className="ml-2 text-[11px] text-muted">{run.result.table.rows.length} records</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {run.model_usage?.slice(0, 2).map((m) => <Badge key={m} tone="blue">{m.replace("models/", "")}</Badge>)}
+              <Badge tone={run.source_mode === "gemini" ? "blue" : "neutral"}>{run.source_mode}</Badge>
+              <Badge tone="green">{Math.round(run.confidence * 100)}% confidence</Badge>
+            </div>
           </div>
+          <DataTable columns={run.result.table.columns} rows={rows} onRow={() => setReviewOpen(true)} />
         </div>
-        <DataTable columns={run.result.table.columns} rows={rows} onRow={() => setReviewOpen(true)} />
       </div>
     );
   }
@@ -542,11 +643,22 @@ function ModuleWorkspace({ module, latestRun, onRun, onApprove, onAction, runnin
             </div>
             <p className="mt-1 text-[12px] text-muted">{module.description}</p>
           </div>
-          <Button onClick={() => onRun(fixture, file)} disabled={running}>
+          <Button onClick={() => onRun(fixture, files, module.id === "2" ? message : undefined)} disabled={running}>
             {running ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-            {running ? "Processing…" : "Run analysis"}
+            {running ? "Processing…" : module.id === "2" ? "Message agent" : "Run analysis"}
           </Button>
         </div>
+        {module.id === "2" && (
+          <div className="mt-3">
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={2}
+              className="min-h-0"
+              placeholder="Message the agent — e.g. “Felix (HOSP-1009) just called in sick for tonight's ICU night shift; need a qualified nurse to cover 19:00–07:00 by 22:00.”"
+            />
+          </div>
+        )}
         <div className="mt-3 flex items-center gap-2">
           <div className="relative w-56">
             <Search size={13} className="absolute left-2.5 top-2.5 text-muted" />
@@ -556,8 +668,8 @@ function ModuleWorkspace({ module, latestRun, onRun, onApprove, onAction, runnin
             {module.fixtures.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
           </Select>
           <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[5px] border border-[#cbd0c9] bg-white px-3 text-[12px] font-medium hover:bg-[#f5f6f4]">
-            <FileText size={13} />{file ? file.name : "Upload file"}
-            <input type="file" className="hidden" accept=".pdf,.docx,.xlsx,.csv,.png,.jpg,.jpeg" onChange={(e) => setFile(e.target.files?.[0])} />
+            <FileText size={13} />{files.length === 0 ? "Upload files" : files.length === 1 ? files[0].name : `${files.length} files selected`}
+            <input type="file" multiple className="hidden" accept=".pdf,.docx,.xlsx,.csv,.png,.jpg,.jpeg" onChange={(e) => setFiles(Array.from(e.target.files ?? []))} />
           </label>
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button variant="outline" size="icon"><MoreHorizontal size={14} /></Button></DropdownMenuTrigger>
@@ -584,7 +696,7 @@ function ModuleWorkspace({ module, latestRun, onRun, onApprove, onAction, runnin
                 <p className="mt-1 text-[12px] leading-5 text-muted">
                   The workflow extracts structured fields, applies deterministic policy controls, and produces an auditable review decision.
                 </p>
-                <Button className="mt-4" onClick={() => onRun(fixture, file)}>
+                <Button className="mt-4" onClick={() => onRun(fixture, files, module.id === "2" ? message : undefined)}>
                   <Play size={14} /> Run selected case
                 </Button>
               </div>
@@ -594,6 +706,7 @@ function ModuleWorkspace({ module, latestRun, onRun, onApprove, onAction, runnin
           <div className="grid grid-cols-[minmax(0,1fr)_340px] gap-3">
             {/* Left column */}
             <div className="min-w-0 space-y-3">
+              {latestRun.file_statuses && latestRun.file_statuses.length > 0 && <BatchProcessingPanel run={latestRun} />}
               {renderResults(latestRun)}
               <div className="panel">
                 <div className="panel-header">
@@ -724,11 +837,11 @@ export function OperationsHub() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const runWorkflow = async (fixture: string, file?: File) => {
+  const runWorkflow = async (fixture: string, files?: File[], message?: string) => {
     if (active === "dashboard") return;
     setRunning(true);
     try {
-      const run = await api.createRun(active, fixture, file);
+      const run = await api.createRun(active, fixture, files, message);
       setRuns((prev) => [run, ...prev.filter((r) => r.id !== run.id)]);
       setToast(`${run.module_name} completed — review ready`);
     } catch (err) {
@@ -744,8 +857,12 @@ export function OperationsHub() {
     catch (err) { setToast(err instanceof Error ? err.message : "Approval failed"); }
   };
   const action = async (id: string) => {
-    try { updateRun(await api.action(id)); setToast("Action simulated — no external system was changed"); }
-    catch (err) { setToast(err instanceof Error ? err.message : "Action failed"); }
+    try {
+      const run = await api.action(id);
+      updateRun(run);
+      const sent = run.audit_events.find((e) => e.stage === "Outreach sent");
+      setToast(sent ? sent.title : "Action simulated — no external system was changed");
+    } catch (err) { setToast(err instanceof Error ? err.message : "Action failed"); }
   };
   const navigate = (id: string) => { setActive(id); setMobileOpen(false); };
 
@@ -813,16 +930,10 @@ export function OperationsHub() {
           </div>
           <div className="flex items-center gap-2">
             <Badge tone="amber">Demo environment</Badge>
-            <Badge tone={health?.langchain ? "green" : health?.gemini ? "blue" : "neutral"}>
-              <span className={cn("mr-1 h-1.5 w-1.5 rounded-full", health?.langchain ? "bg-[#2f805d]" : health?.gemini ? "bg-[#3b82f6]" : "bg-[#8f9893]")} />
-              {health?.langchain ? "LangChain · Claude" : health?.gemini ? "Gemini connected" : "Deterministic mode"}
+            <Badge tone={health?.agents ? "green" : "red"}>
+              <span className={cn("mr-1 h-1.5 w-1.5 rounded-full", health?.agents ? "bg-[#2f805d]" : "bg-[#c0392b]")} />
+              {health?.agents ? "Gemini agents ready" : "Gemini key required"}
             </Badge>
-            {health?.langsmith && (
-              <Badge tone="blue">
-                <span className="mr-1 h-1.5 w-1.5 rounded-full bg-[#3b82f6]" />
-                LangSmith
-              </Badge>
-            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -854,13 +965,21 @@ export function OperationsHub() {
           )}
       </main>
 
-      {toast && (
-        <div className="fixed bottom-4 right-4 z-[70] flex max-w-sm items-center gap-2 rounded-[5px] border border-[#b9d4c4] bg-white px-3 py-2.5 text-[12px] shadow-lg">
-          <Check size={14} className="text-[#2f805d] shrink-0" />
-          {toast}
-          <button className="ml-2 text-muted" onClick={() => setToast(undefined)}><X size={13} /></button>
-        </div>
-      )}
+      {toast && (() => {
+        const isError = /fail|error|required|rate limit|quota|exceeded|unavailable|429/i.test(toast);
+        return (
+          <div className={cn(
+            "fixed bottom-4 right-4 z-[70] flex max-w-sm items-center gap-2 rounded-[5px] border px-3 py-2.5 text-[12px] shadow-lg",
+            isError ? "border-[#e8b4b4] bg-[#fff5f5]" : "border-[#b9d4c4] bg-white",
+          )}>
+            {isError
+              ? <AlertTriangle size={14} className="shrink-0 text-[#c0392b]" />
+              : <Check size={14} className="shrink-0 text-[#2f805d]" />}
+            {toast}
+            <button className="ml-2 text-muted" onClick={() => setToast(undefined)}><X size={13} /></button>
+          </div>
+        );
+      })()}
     </div>
   );
 }

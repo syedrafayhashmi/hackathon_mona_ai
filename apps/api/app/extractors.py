@@ -34,6 +34,8 @@ def extract_text(filename: str, content: bytes) -> str:
         return "\n".join(parts)
     if suffix == ".csv":
         return content.decode("utf-8-sig", errors="replace")
+    if suffix == ".txt":
+        return content.decode("utf-8", errors="replace")
     if suffix in {".png", ".jpg", ".jpeg"}:
         try:
             import pytesseract
