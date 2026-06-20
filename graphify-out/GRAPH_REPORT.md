@@ -1,16 +1,16 @@
 # Graph Report - hackathon_problems_20260620  (2026-06-20)
 
 ## Corpus Check
-- 31 files · ~555,009 words
+- 31 files · ~556,339 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 269 nodes · 594 edges · 17 communities (13 shown, 4 thin omitted)
+- 273 nodes · 601 edges · 17 communities (13 shown, 4 thin omitted)
 - Extraction: 82% EXTRACTED · 18% INFERRED · 0% AMBIGUOUS · INFERRED: 107 edges (avg confidence: 0.5)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b1112a6e`
+- Built from commit: `83677e23`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -31,7 +31,7 @@
 - [[_COMMUNITY_Community 16|Community 16]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `AuditEvent` - 33 edges
+1. `AuditEvent` - 34 edges
 2. `WorkflowResult` - 20 edges
 3. `FileStatus` - 20 edges
 4. `AIWorkflowValidationError` - 20 edges
@@ -39,20 +39,20 @@
 6. `compilerOptions` - 16 edges
 7. `AgentTask` - 15 edges
 8. `merge_file_results()` - 15 edges
-9. `RunRecord` - 13 edges
+9. `RunRecord` - 14 edges
 10. `AgentWorkflowOutput` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `RunRecord` --uses--> `GeminiUnavailableError`  [INFERRED]
+  apps/api/app/main.py → apps/api/app/gemini.py
+- `RunRecord` --uses--> `GeminiGenerationError`  [INFERRED]
+  apps/api/app/main.py → apps/api/app/gemini.py
+- `RunRecord` --uses--> `GeminiRateLimitError`  [INFERRED]
+  apps/api/app/main.py → apps/api/app/gemini.py
 - `WorkflowState` --uses--> `WorkflowResult`  [INFERRED]
   apps/api/app/graph.py → apps/api/app/models.py
-- `Any` --uses--> `WorkflowResult`  [INFERRED]
-  apps/api/app/graph.py → apps/api/app/models.py
-- `AgentTask` --uses--> `WorkflowResult`  [INFERRED]
-  apps/api/app/graph.py → apps/api/app/models.py
-- `FastAPI` --uses--> `AuditEvent`  [INFERRED]
-  apps/api/app/main.py → apps/api/app/models.py
-- `FastAPI` --uses--> `FileStatus`  [INFERRED]
-  apps/api/app/main.py → apps/api/app/models.py
+- `WorkflowState` --uses--> `AgentTask`  [INFERRED]
+  apps/api/app/graph.py → apps/api/app/workflows.py
 
 ## Import Cycles
 - 1-file cycle: `apps/api/app/main.py -> apps/api/app/main.py`
@@ -64,8 +64,8 @@ Cohesion: 0.08
 Nodes (30): CaseSummary, Dashboard(), fallbackModules, iconMap, ModuleWorkspace(), OperationsHub(), statusTone(), valueCell() (+22 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.11
-Nodes (37): GeminiGenerationError, GeminiRateLimitError, GeminiUnavailableError, Raised when Gemini returns 429 / RESOURCE_EXHAUSTED after all retries., approve_run(), artifact(), create_run(), _gather_and_merge() (+29 more)
+Cohesion: 0.13
+Nodes (29): approve_run(), create_run(), _gather_and_merge(), lifespan(), Fan out one Gemini agent per organizer source file (batch fixtures)., Fan out one Gemini agent per uploaded file, then merge into one batch result., Problem 10 action: send a missing/corrected document request to the applicant., Problem 2 action: message the top-ranked eligible candidate to cover the gap. (+21 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.23
@@ -80,12 +80,12 @@ Cohesion: 0.10
 Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+11 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.32
-Nodes (16): AgentTask, _build_graph(), _get_graph(), node_intake(), node_review(), node_security(), node_solve(), node_validate() (+8 more)
+Cohesion: 0.33
+Nodes (15): AgentTask, _build_graph(), _get_graph(), node_intake(), node_review(), node_security(), node_solve(), node_validate() (+7 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.10
-Nodes (31): extract_text(), build_agent_task(), build_single_file_task(), build_single_upload_task(), _create_artifacts(), execute_workflow(), _ffmpeg_escape(), _fixture_source() (+23 more)
+Nodes (32): extract_text(), AgentTask, build_agent_task(), build_single_file_task(), build_single_upload_task(), _create_artifacts(), execute_workflow(), _ffmpeg_escape() (+24 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.25
@@ -96,8 +96,8 @@ Cohesion: 0.29
 Nodes (5): 1. Think Before Coding, 2. Simplicity First, 3. Surgical Changes, 4. Goal-Driven Execution, graphify
 
 ### Community 15 - "Community 15"
-Cohesion: 0.16
-Nodes (10): _backoff_delay(), GeminiAdapter, _is_rate_limit(), Run one structured Gemini call with logging and bounded exponential backoff retr, _retry_after_seconds(), _short(), _status_code(), Any (+2 more)
+Cohesion: 0.12
+Nodes (22): _backoff_delay(), _extract_json(), GeminiAdapter, GeminiGenerationError, GeminiRateLimitError, GeminiUnavailableError, _is_rate_limit(), Run one structured Gemini call with logging and bounded exponential backoff retr (+14 more)
 
 ## Knowledge Gaps
 - **65 isolated node(s):** `Any`, `metadata`, `iconMap`, `fallbackModules`, `CaseSummary` (+60 more)
@@ -107,11 +107,11 @@ Nodes (10): _backoff_delay(), GeminiAdapter, _is_rate_limit(), Run one structure
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `AuditEvent` connect `Community 6` to `Community 2`, `Community 3`, `Community 7`?**
-  _High betweenness centrality (0.033) - this node is a cross-community bridge._
+- **Why does `AuditEvent` connect `Community 6` to `Community 2`, `Community 3`, `Community 15`, `Community 7`?**
+  _High betweenness centrality (0.035) - this node is a cross-community bridge._
 - **Why does `execute_workflow()` connect `Community 7` to `Community 2`, `Community 6`?**
   _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Why does `AIWorkflowValidationError` connect `Community 3` to `Community 2`, `Community 6`, `Community 7`?**
+- **Why does `RunRecord` connect `Community 2` to `Community 3`, `Community 15`?**
   _High betweenness centrality (0.011) - this node is a cross-community bridge._
 - **Are the 18 inferred relationships involving `AuditEvent` (e.g. with `AgentTask` and `WorkflowState`) actually correct?**
   _`AuditEvent` has 18 INFERRED edges - model-reasoned connections that need verification._

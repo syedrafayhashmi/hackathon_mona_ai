@@ -8,6 +8,11 @@ A hackathon-ready B2B operations dashboard covering ten AI workflows across fina
 2. Run `docker compose up --build`.
 3. Open `http://localhost:3000`.
 
+To use the app from another device on the same network, open
+`http://<computer-lan-ip>:3000` on that device. On Windows, find the address
+with `ipconfig` and allow inbound TCP port 3000 on private networks if Windows
+Firewall blocks the connection.
+
 The API returns `503` when Gemini is unavailable; it does not substitute hardcoded demo results. External email, SMS, and price-publication actions are simulated and require human approval.
 
 ## Gemini agent architecture

@@ -1,6 +1,9 @@
 import type { Health, ModuleDefinition, RunRecord } from "./types";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Use same-origin requests by default so clients on other machines do not try
+// to resolve `localhost` as the API host. Next.js proxies these paths to the
+// API container through its internal Docker network.
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, { ...init, cache: "no-store" });
@@ -27,4 +30,3 @@ export const api = {
   action: (id: string) => request<RunRecord>(`/api/runs/${id}/simulate-action`, { method: "POST" }),
   reset: () => request<{ status: string }>("/api/demo/reset", { method: "POST" }),
 };
-

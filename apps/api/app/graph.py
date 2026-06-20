@@ -37,23 +37,50 @@ def node_intake(state: WorkflowState) -> dict[str, Any]:
     )]}
 
 
+_INJECTION_PATTERNS = (
+    # Direct override commands
+    "ignore previous", "ignore all previous", "ignore above", "ignore prior",
+    "forget instructions", "forget previous", "disregard rules", "disregard instructions",
+    "disregard all", "override instructions", "override previous",
+    # Role-switching
+    "you are now", "act as", "pretend you are", "your new role", "maintenance mode",
+    "developer mode", "jailbreak", "dan mode",
+    # Data exfiltration
+    "reveal database", "reveal all records", "show all records", "dump database",
+    "print all records", "send all data", "expose credentials", "reveal credentials",
+    "list all applicants", "reveal applicant",
+    # Instruction injection markers
+    "new instructions", "system:", "assistant:", "[system]", "[instruction]",
+    "<<<", "###instruction", "---new task",
+    # Encoded / split-pattern attempts
+    "base64:", "eval(", "exec(",
+)
+
+
 def node_security(state: WorkflowState) -> dict[str, Any]:
-    text = state["task"].source_text.lower()
-    patterns = (
-        "ignore previous", "forget instructions", "disregard rules", "reveal database",
-        "show all records", "you are now", "new instructions", "ignore above",
-    )
-    detected = any(pattern in text for pattern in patterns)
+    task = state["task"]
+    # Scan both extracted text AND raw attachment bytes (decoded as latin-1 to catch embedded strings)
+    candidates = [task.source_text.lower()]
+    for content, _ in task.attachments:
+        try:
+            candidates.append(content.decode("latin-1", errors="replace").lower())
+        except Exception:
+            pass
+    combined = " ".join(candidates)
+
+    matched = next((p for p in _INJECTION_PATTERNS if p in combined), None)
+    detected = matched is not None
+    detail_blocked = (
+        f"Adversarial instruction pattern '{matched}' detected in document content and marked as untrusted data "
+        "before the Gemini call. The agent may classify the attachment but cannot execute its contents."
+    ) if detected else "No adversarial instruction patterns were detected before AI processing."
+
     return {
         "security_detected": detected,
         "graph_events": [AuditEvent(
             stage="Gemini Agent · Security",
             title="Prompt injection blocked" if detected else "Prompt-injection pre-scan clear",
-            detail=(
-                "Adversarial instructions were marked as untrusted data before the Gemini call. The agent may classify the attachment but cannot execute its contents."
-                if detected else
-                "No adversarial instruction patterns were detected before AI processing."
-            ),
+            detail=detail_blocked,
             status="blocked" if detected else "complete",
             at=_now(),
         )],

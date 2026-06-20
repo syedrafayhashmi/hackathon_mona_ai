@@ -72,6 +72,27 @@ def _backoff_delay(attempt: int, retry_after: float | None) -> float:
     return min(_BASE_DELAY * (2 ** (attempt - 1)), _MAX_DELAY) + random.uniform(0, 0.5)
 
 
+def _extract_json(text: str) -> dict:
+    """Extract the first complete JSON object from text.
+
+    Gemini occasionally appends explanatory prose after the JSON block even when
+    response_mime_type='application/json' is set. json.loads raises 'Extra data'
+    in that case; we locate the outermost { … } instead.
+    """
+    start = text.find("{")
+    if start == -1:
+        raise ValueError("No JSON object found in Gemini response")
+    depth = 0
+    for i, ch in enumerate(text[start:], start):
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return json.loads(text[start : i + 1])
+    raise ValueError("Unterminated JSON object in Gemini response")
+
+
 class GeminiAdapter:
     def __init__(self) -> None:
         self.api_key = os.getenv("GEMINI_API_KEY", "").strip()
@@ -128,7 +149,7 @@ class GeminiAdapter:
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
                         temperature=0.1,
-                        max_output_tokens=8192,
+                        max_output_tokens=16384,
                     ),
                 )
                 latency_ms = (time.perf_counter() - started) * 1000
@@ -136,7 +157,7 @@ class GeminiAdapter:
                     parsed = response.parsed
                     payload = parsed.model_dump() if hasattr(parsed, "model_dump") else dict(parsed)
                 elif response.text:
-                    payload = json.loads(response.text)
+                    payload = _extract_json(response.text)
                 else:
                     raise ValueError("Gemini returned an empty response")
                 logger.info(

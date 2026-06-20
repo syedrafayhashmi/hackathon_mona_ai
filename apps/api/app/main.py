@@ -243,6 +243,35 @@ def _rank_value(row: dict) -> int:
     return int(digits) if digits else 99
 
 
+def _send_document_request(run: RunRecord) -> None:
+    """Problem 10 action: send a missing/corrected document request to the applicant."""
+    missing = [r for r in run.result.table.rows if str(r.get("Status", "")).strip().lower() in ("missing", "mismatch", "quarantined")]
+    if not missing:
+        run.audit_events.append(AuditEvent(stage="Document request", title="All documents already complete", detail="No missing or mismatched documents — no request needed.", status="complete"))
+        return
+    missing_types = ", ".join(str(r.get("Type", "document")) for r in missing)
+    # Extract identity from evidence (more structured) then fall back to summary
+    evidence_text = " ".join(run.result.evidence)
+    summary = run.result.summary or ""
+    haystack = evidence_text + " " + summary
+    email_match = re.search(r"[\w.+-]+@[\w.-]+\.\w+", haystack)
+    applicant_email = email_match.group() if email_match else "the applicant"
+    # Look for "identified as Name Surname" first, then "applicant: Name Surname"
+    name_match = (
+        re.search(r"identified as ([A-Z][a-z]+(?:\s[A-Z][a-z]+){1,2})", haystack)
+        or re.search(r"applicant[:\s]+([A-Z][a-z]+(?:\s[A-Z][a-z]+){1,2})", haystack)
+    )
+    applicant_name = name_match.group(1).strip() if name_match else "Applicant"
+    draft = (
+        f"Dear {applicant_name},\n\n"
+        f"Thank you for your application. To complete your file we still require the following: {missing_types}. "
+        f"Please reply to this email with the missing item(s) at your earliest convenience.\n\n"
+        f"Kind regards,\nRheinmetall Talent Acquisition"
+    )
+    run.audit_events.append(AuditEvent(stage="Document request sent", title=f"Missing-document request sent to {applicant_email}", detail=draft, status="complete"))
+    run.audit_events.append(AuditEvent(stage="Document request", title="Awaiting applicant response", detail=f"Requested: {missing_types}", status="review"))
+
+
 def _send_shift_outreach(run: RunRecord) -> None:
     """Problem 2 action: message the top-ranked eligible candidate to cover the gap."""
     rows = run.result.table.rows
@@ -267,6 +296,8 @@ def simulate_action(run_id: str) -> RunRecord:
         raise HTTPException(status_code=409, detail="Human approval is required first")
     if run.problem_id == "2":
         _send_shift_outreach(run)
+    elif run.problem_id == "10":
+        _send_document_request(run)
     else:
         run.audit_events.append(AuditEvent(stage="Actioned", title="Simulated action completed", detail="No external system was changed."))
     run.status = "actioned"
