@@ -29,7 +29,7 @@ def test_prompt_injection_is_blocked():
 
 
 def test_pdf_extractor_reads_supplied_invoice():
-    path = Path("data/raw/problem_01_invoices/01_stadtwerke_gas_de.pdf")
+    path = Path("../../data/raw/problem_01_invoices/01_stadtwerke_gas_de.pdf")
     text = extract_text(path.name, path.read_bytes())
     assert "Stadtwerke" in text
     assert "258,44" in text

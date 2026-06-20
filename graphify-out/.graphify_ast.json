@@ -1,0 +1,206 @@
+{
+  "nodes": [
+    {
+      "id": "app_layout_rootlayout",
+      "label": "RootLayout",
+      "file_type": "code",
+      "source_file": "apps/web/app/layout.tsx",
+      "source_location": "L9",
+      "_origin": "ast"
+    },
+    {
+      "id": "app_page_home",
+      "label": "Home",
+      "file_type": "code",
+      "source_file": "apps/web/app/page.tsx",
+      "source_location": "L3",
+      "_origin": "ast"
+    },
+    {
+      "id": "ui_primitives_buttonprops",
+      "label": "ButtonProps",
+      "file_type": "code",
+      "source_file": "apps/web/components/ui/primitives.tsx",
+      "source_location": "L27",
+      "_origin": "ast"
+    },
+    {
+      "id": "ui_primitives_separator",
+      "label": "Separator",
+      "file_type": "code",
+      "source_file": "apps/web/components/ui/primitives.tsx",
+      "source_location": "L58",
+      "_origin": "ast"
+    },
+    {
+      "id": "ui_primitives_scrollarea",
+      "label": "ScrollArea",
+      "file_type": "code",
+      "source_file": "apps/web/components/ui/primitives.tsx",
+      "source_location": "L59",
+      "_origin": "ast"
+    },
+    {
+      "id": "ui_primitives_sheetcontent",
+      "label": "SheetContent",
+      "file_type": "code",
+      "source_file": "apps/web/components/ui/primitives.tsx",
+      "source_location": "L63",
+      "_origin": "ast"
+    },
+    {
+      "id": "lib_types_moduledefinition",
+      "label": "ModuleDefinition",
+      "file_type": "code",
+      "source_file": "apps/web/lib/types.ts",
+      "source_location": "L1",
+      "_origin": "ast"
+    },
+    {
+      "id": "lib_types_auditevent",
+      "label": "AuditEvent",
+      "file_type": "code",
+      "source_file": "apps/web/lib/types.ts",
+      "source_location": "L10",
+      "_origin": "ast"
+    },
+    {
+      "id": "lib_types_runrecord",
+      "label": "RunRecord",
+      "file_type": "code",
+      "source_file": "apps/web/lib/types.ts",
+      "source_location": "L18",
+      "_origin": "ast"
+    },
+    {
+      "id": "lib_types_health",
+      "label": "Health",
+      "file_type": "code",
+      "source_file": "apps/web/lib/types.ts",
+      "source_location": "L42",
+      "_origin": "ast"
+    },
+    {
+      "id": "lib_utils_cn",
+      "label": "cn",
+      "file_type": "code",
+      "source_file": "apps/web/lib/utils.ts",
+      "source_location": "L4",
+      "_origin": "ast"
+    }
+  ],
+  "edges": [
+    {
+      "source": "components_operations_hub",
+      "target": "lib_types_health",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/web/components/operations-hub.tsx",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "components_operations_hub",
+      "target": "lib_types_moduledefinition",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/web/components/operations-hub.tsx",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "components_operations_hub",
+      "target": "lib_types_runrecord",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/web/components/operations-hub.tsx",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "components_operations_hub",
+      "target": "ui_primitives_scrollarea",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/web/components/operations-hub.tsx",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "components_operations_hub",
+      "target": "ui_primitives_separator",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/web/components/operations-hub.tsx",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "components_operations_hub",
+      "target": "ui_primitives_sheetcontent",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/web/components/operations-hub.tsx",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "components_operations_hub",
+      "target": "lib_utils_cn",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/web/components/operations-hub.tsx",
+      "source_location": "L18",
+      "weight": 1.0
+    },
+    {
+      "source": "ui_primitives",
+      "target": "lib_utils_cn",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/web/components/ui/primitives.tsx",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_api",
+      "target": "lib_types_health",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/web/lib/api.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_api",
+      "target": "lib_types_moduledefinition",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/web/lib/api.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "lib_api",
+      "target": "lib_types_runrecord",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/web/lib/api.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

@@ -1,0 +1,110 @@
+{
+  "communities": {
+    "0": [
+      "app_layout_rootlayout"
+    ],
+    "1": [
+      "app_page_home"
+    ],
+    "2": [
+      "lib_types_auditevent"
+    ],
+    "3": [
+      "lib_types_health"
+    ],
+    "4": [
+      "lib_types_moduledefinition"
+    ],
+    "5": [
+      "lib_types_runrecord"
+    ],
+    "6": [
+      "lib_utils_cn"
+    ],
+    "7": [
+      "ui_primitives_buttonprops"
+    ],
+    "8": [
+      "ui_primitives_scrollarea"
+    ],
+    "9": [
+      "ui_primitives_separator"
+    ],
+    "10": [
+      "ui_primitives_sheetcontent"
+    ]
+  },
+  "cohesion": {
+    "0": 1.0,
+    "1": 1.0,
+    "2": 1.0,
+    "3": 1.0,
+    "4": 1.0,
+    "5": 1.0,
+    "6": 1.0,
+    "7": 1.0,
+    "8": 1.0,
+    "9": 1.0,
+    "10": 1.0
+  },
+  "gods": [
+    {
+      "id": "app_layout_rootlayout",
+      "label": "RootLayout",
+      "degree": 0
+    },
+    {
+      "id": "app_page_home",
+      "label": "Home",
+      "degree": 0
+    },
+    {
+      "id": "ui_primitives_buttonprops",
+      "label": "ButtonProps",
+      "degree": 0
+    },
+    {
+      "id": "ui_primitives_separator",
+      "label": "Separator",
+      "degree": 0
+    },
+    {
+      "id": "ui_primitives_scrollarea",
+      "label": "ScrollArea",
+      "degree": 0
+    },
+    {
+      "id": "ui_primitives_sheetcontent",
+      "label": "SheetContent",
+      "degree": 0
+    },
+    {
+      "id": "lib_types_moduledefinition",
+      "label": "ModuleDefinition",
+      "degree": 0
+    },
+    {
+      "id": "lib_types_auditevent",
+      "label": "AuditEvent",
+      "degree": 0
+    },
+    {
+      "id": "lib_types_runrecord",
+      "label": "RunRecord",
+      "degree": 0
+    },
+    {
+      "id": "lib_types_health",
+      "label": "Health",
+      "degree": 0
+    }
+  ],
+  "surprises": [],
+  "questions": [
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `RootLayout`, `Home`, `ButtonProps` to the rest of the system?",
+      "why": "11 weakly-connected nodes found - possible documentation gaps or missing edges."
+    }
+  ]
+}

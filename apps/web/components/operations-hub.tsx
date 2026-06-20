@@ -73,7 +73,7 @@ function priorityTone(p: string): "red" | "amber" | "neutral" {
 
 function valueCell(value: unknown) {
   const text = String(value ?? "—");
-  const badges = ["Review", "Blocked", "Valid", "Expired", "Denied", "Eligible", "Pass", "Unverified", "Quarantined", "Received", "Pending", "Ready", "Clean"];
+  const badges = ["Review", "Approved", "Blocked", "Valid", "Expired", "Denied", "Eligible", "Pass", "Unverified", "Quarantined", "Received", "Pending", "Ready", "Clean"];
   if (badges.includes(text)) return <Badge tone={statusTone(text)}>{text}</Badge>;
   return <span>{text}</span>;
 }
@@ -468,16 +468,17 @@ function Dashboard({ runs, onNavigate, health }: { runs: RunRecord[]; onNavigate
             <Separator className="my-3" />
             <div className="grid grid-cols-2 gap-2 text-[11px]">
               <div className="rounded-[4px] border border-line bg-[#fafbf9] p-2">
-                <span className="text-muted">Gemini router</span>
+                <span className="text-muted">LangChain / Claude</span>
                 <div className="mt-1 flex items-center gap-1.5 font-medium">
-                  <span className={cn("h-1.5 w-1.5 rounded-full", health?.gemini ? "bg-[#2f805d]" : "bg-[#c78d25]")} />
-                  {health?.gemini ? "4 models connected" : "Deterministic fallback"}
+                  <span className={cn("h-1.5 w-1.5 rounded-full", health?.langchain ? "bg-[#2f805d]" : "bg-[#c78d25]")} />
+                  {health?.langchain ? (health.models?.langchain_primary ?? "Claude connected") : "Deterministic fallback"}
                 </div>
               </div>
               <div className="rounded-[4px] border border-line bg-[#fafbf9] p-2">
-                <span className="text-muted">Injection scanner</span>
+                <span className="text-muted">LangSmith tracing</span>
                 <div className="mt-1 flex items-center gap-1.5 font-medium">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#2f805d]" />Active — 1 block today
+                  <span className={cn("h-1.5 w-1.5 rounded-full", health?.langsmith ? "bg-[#2f805d]" : "bg-[#8f9893]")} />
+                  {health?.langsmith ? "Traces streaming" : "Tracing off"}
                 </div>
               </div>
             </div>
@@ -506,6 +507,9 @@ function ModuleWorkspace({ module, latestRun, onRun, onApprove, onAction, runnin
     if (module.id === "10") return <SecureEmailPanel run={run} />;
     if (module.id === "3") return <WorkPermitPanel run={run} />;
     if (module.id === "5") return <InterviewPanel run={run} />;
+    const rows = run.approved
+      ? run.result.table.rows.map((row) => row.Status === "Review" ? { ...row, Status: "Approved" } : row)
+      : run.result.table.rows;
     return (
       <div className="panel">
         <div className="panel-header">
@@ -519,7 +523,7 @@ function ModuleWorkspace({ module, latestRun, onRun, onApprove, onAction, runnin
             <Badge tone="green">{Math.round(run.confidence * 100)}% confidence</Badge>
           </div>
         </div>
-        <DataTable columns={run.result.table.columns} rows={run.result.table.rows} onRow={() => setReviewOpen(true)} />
+        <DataTable columns={run.result.table.columns} rows={rows} onRow={() => setReviewOpen(true)} />
       </div>
     );
   }
@@ -809,10 +813,16 @@ export function OperationsHub() {
           </div>
           <div className="flex items-center gap-2">
             <Badge tone="amber">Demo environment</Badge>
-            <Badge tone={health?.gemini ? "green" : "neutral"}>
-              <span className={cn("mr-1 h-1.5 w-1.5 rounded-full", health?.gemini ? "bg-[#2f805d]" : "bg-[#8f9893]")} />
-              {health?.gemini ? "Gemini connected" : "Deterministic mode"}
+            <Badge tone={health?.langchain ? "green" : health?.gemini ? "blue" : "neutral"}>
+              <span className={cn("mr-1 h-1.5 w-1.5 rounded-full", health?.langchain ? "bg-[#2f805d]" : health?.gemini ? "bg-[#3b82f6]" : "bg-[#8f9893]")} />
+              {health?.langchain ? "LangChain · Claude" : health?.gemini ? "Gemini connected" : "Deterministic mode"}
             </Badge>
+            {health?.langsmith && (
+              <Badge tone="blue">
+                <span className="mr-1 h-1.5 w-1.5 rounded-full bg-[#3b82f6]" />
+                LangSmith
+              </Badge>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">

@@ -34,5 +34,14 @@ def extract_text(filename: str, content: bytes) -> str:
         return "\n".join(parts)
     if suffix == ".csv":
         return content.decode("utf-8-sig", errors="replace")
+    if suffix in {".png", ".jpg", ".jpeg"}:
+        try:
+            import pytesseract
+            from PIL import Image
+            image = Image.open(io.BytesIO(content))
+            text = pytesseract.image_to_string(image)
+            return text if text.strip() else f"[Image OCR: {filename} - no text extracted]"
+        except Exception as e:
+            return f"[Image OCR failed for {filename}: {str(e)}]"
     return ""
 

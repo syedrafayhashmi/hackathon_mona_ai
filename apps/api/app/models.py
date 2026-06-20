@@ -32,6 +32,23 @@ class WorkflowResult(BaseModel):
     artifacts: list[str] = []
 
 
+class AgentReview(BaseModel):
+    decision: str
+    owner: str
+    risk: Literal["Low", "Medium", "High", "Critical"]
+
+
+class AgentWorkflowOutput(BaseModel):
+    summary: str
+    rows: list[dict[str, Any]]
+    evidence: list[str]
+    warnings: list[str] = []
+    review: AgentReview
+    confidence: float = Field(ge=0.0, le=1.0)
+    decision: str
+    requires_approval: bool = True
+
+
 class RunRecord(BaseModel):
     id: str
     problem_id: str

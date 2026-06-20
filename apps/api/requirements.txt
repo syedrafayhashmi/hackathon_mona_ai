@@ -8,4 +8,7 @@ openpyxl==3.1.5
 google-genai==1.51.0
 pytest==8.3.4
 httpx==0.28.1
-
+Pillow>=10.0.0
+pytesseract>=0.3.10
+# Agent orchestration
+langgraph>=0.2.28

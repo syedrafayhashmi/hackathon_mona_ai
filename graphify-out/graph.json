@@ -1,0 +1,120 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "RootLayout",
+      "file_type": "code",
+      "source_file": "apps/web/app/layout.tsx",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "app_layout_rootlayout",
+      "community": 0,
+      "norm_label": "rootlayout"
+    },
+    {
+      "label": "Home",
+      "file_type": "code",
+      "source_file": "apps/web/app/page.tsx",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "app_page_home",
+      "community": 1,
+      "norm_label": "home"
+    },
+    {
+      "label": "ButtonProps",
+      "file_type": "code",
+      "source_file": "apps/web/components/ui/primitives.tsx",
+      "source_location": "L27",
+      "_origin": "ast",
+      "id": "ui_primitives_buttonprops",
+      "community": 7,
+      "norm_label": "buttonprops"
+    },
+    {
+      "label": "Separator",
+      "file_type": "code",
+      "source_file": "apps/web/components/ui/primitives.tsx",
+      "source_location": "L58",
+      "_origin": "ast",
+      "id": "ui_primitives_separator",
+      "community": 9,
+      "norm_label": "separator"
+    },
+    {
+      "label": "ScrollArea",
+      "file_type": "code",
+      "source_file": "apps/web/components/ui/primitives.tsx",
+      "source_location": "L59",
+      "_origin": "ast",
+      "id": "ui_primitives_scrollarea",
+      "community": 8,
+      "norm_label": "scrollarea"
+    },
+    {
+      "label": "SheetContent",
+      "file_type": "code",
+      "source_file": "apps/web/components/ui/primitives.tsx",
+      "source_location": "L63",
+      "_origin": "ast",
+      "id": "ui_primitives_sheetcontent",
+      "community": 10,
+      "norm_label": "sheetcontent"
+    },
+    {
+      "label": "ModuleDefinition",
+      "file_type": "code",
+      "source_file": "apps/web/lib/types.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "lib_types_moduledefinition",
+      "community": 4,
+      "norm_label": "moduledefinition"
+    },
+    {
+      "label": "AuditEvent",
+      "file_type": "code",
+      "source_file": "apps/web/lib/types.ts",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "lib_types_auditevent",
+      "community": 2,
+      "norm_label": "auditevent"
+    },
+    {
+      "label": "RunRecord",
+      "file_type": "code",
+      "source_file": "apps/web/lib/types.ts",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "lib_types_runrecord",
+      "community": 5,
+      "norm_label": "runrecord"
+    },
+    {
+      "label": "Health",
+      "file_type": "code",
+      "source_file": "apps/web/lib/types.ts",
+      "source_location": "L42",
+      "_origin": "ast",
+      "id": "lib_types_health",
+      "community": 3,
+      "norm_label": "health"
+    },
+    {
+      "label": "cn",
+      "file_type": "code",
+      "source_file": "apps/web/lib/utils.ts",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "lib_utils_cn",
+      "community": 6,
+      "norm_label": "cn"
+    }
+  ],
+  "links": [],
+  "hyperedges": [],
+  "built_at_commit": "da88c34bed9c712d5f38f44eeaa709304f5c3877"
+}

@@ -39,4 +39,11 @@ export type RunRecord = {
   audit_events: AuditEvent[];
 };
 
-export type Health = { status: string; gemini: boolean; ffmpeg: boolean; models?: Record<string, string> };
+export type Health = {
+  status: string;
+  gemini: boolean;
+  langchain: boolean;
+  langsmith: boolean;
+  ffmpeg: boolean;
+  models?: Record<string, string>;
+};
