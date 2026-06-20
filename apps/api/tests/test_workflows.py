@@ -73,6 +73,32 @@ def test_pricing_stays_inside_band():
     assert all(row["Guardrail"] in {"Pass", "Review"} for row in result.table.rows)
 
 
+def test_future_dated_permit_without_employment_permission_is_denied():
+    payload = {
+        "summary": "Permit extracted.",
+        "rows": [{
+            "Document": "permit_wp_invalid_02.pdf",
+            "Permit": "Aufenthaltserlaubnis",
+            "Employment": "Not permitted",
+            "Valid until": "2027-09-30",
+            "Confidence": "97%",
+            "Outcome": "Valid",
+        }],
+        "evidence": ["Employment is explicitly not permitted."],
+        "warnings": [],
+        "review": {"decision": "Review", "owner": "Compliance", "risk": "High"},
+        "confidence": 0.97,
+        "decision": "Review permit",
+        "requires_approval": True,
+    }
+
+    result, confidence, *_ = workflows.result_from_agent_payload("3", payload)
+
+    assert result.table.rows[0]["Outcome"] == "Denied"
+    assert result.table.rows[0]["Confidence"] == "85%"
+    assert confidence == 0.85
+
+
 def test_product_gap_prompt_uses_complete_catalogue_and_exact_grid():
     task = workflows.build_agent_task("9", "competitor-matrix")
 

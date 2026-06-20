@@ -430,6 +430,13 @@ def merge_file_results(
 # Work-permit validity is judged against this fixed date (see SPECS["3"]).
 _PERMIT_DECISION_DATE = date(2026, 6, 20)
 _PERMIT_UNKNOWN = {"", "unknown", "n/a", "na", "-", "—", "not specified", "none", "?"}
+_PERMIT_EMPLOYMENT_DENIED = (
+    "not permitted", "not allowed", "prohibited", "denied", "no employment",
+    "nicht gestattet", "nicht erlaubt", "keine erwerbstätigkeit", "erwerbstätigkeit nicht",
+)
+_PERMIT_EMPLOYMENT_ALLOWED = (
+    "permitted", "allowed", "authorized", "gestattet", "erlaubt", "yes",
+)
 
 
 def _parse_permit_date(value: str) -> date | None:
@@ -440,6 +447,20 @@ def _parse_permit_date(value: str) -> date | None:
         except ValueError:
             continue
     return None
+
+
+def _permit_outcome(row: dict[str, Any]) -> str:
+    """Apply employment authorization before considering document expiry."""
+    employment = str(row.get("Employment", "")).strip().lower()
+    if any(term in employment for term in _PERMIT_EMPLOYMENT_DENIED):
+        return "Denied"
+
+    valid_until = _parse_permit_date(str(row.get("Valid until", "")))
+    if valid_until is not None and valid_until < _PERMIT_DECISION_DATE:
+        return "Expired"
+    if valid_until is not None and any(term in employment for term in _PERMIT_EMPLOYMENT_ALLOWED):
+        return "Valid"
+    return "Denied"
 
 
 def _permit_confidence(row: dict[str, Any]) -> float:
@@ -656,7 +677,10 @@ def result_from_agent_payload(
 
     gap_validation_warnings: list[str] = []
     static_gap_source = False
-    if problem_id == "8":
+    if problem_id == "3":
+        for row in agent_output.rows:
+            row["Outcome"] = _permit_outcome(row)
+    elif problem_id == "8":
         for index, row in enumerate(agent_output.rows, start=1):
             raw_adj = str(row["Adjustment"])
             match = re.search(r"[-+]?\d+(?:\.\d+)?", raw_adj)
