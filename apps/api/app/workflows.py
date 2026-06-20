@@ -71,7 +71,7 @@ SPECS: dict[str, WorkflowSpec] = {
     ),
     "4": WorkflowSpec(
         ["Candidate", "CV chronology", "Certificate", "Evidence", "Risk"],
-        "Produce exactly one row for EACH candidate CV in the source (there are several; the CV filename identifies the candidate). For each candidate, compare their CV claims against the supplied certificate images and name the certificate(s) that support them. When no supplied certificate matches the candidate's name, state that explicitly in Evidence and raise the Risk. Do not allege fraud. Identify chronology conflicts, unverifiable claims, expiry issues and the most useful primary-source verification step.",
+        "Produce exactly one row for EACH candidate CV in the source (the CV filename identifies the candidate). Assess each CV on its own merits FIRST: in CV chronology summarise the work history and flag internal inconsistencies, timeline gaps or overlaps, implausible or unverifiable claims, and signs of AI-generated or templated content. Then use the supplied certificate images as supporting evidence: name any certificate that backs a candidate's claims and judge whether it is valid and current; note when claimed qualifications have no supporting certificate. Set Risk per candidate to Low, Medium or High from the actual strength of these signals — candidates must NOT all receive the same Risk. If certificates were supplied whose names match no candidate, report that once in Evidence as a separate red flag. Do not allege fraud; for each candidate give the single most useful primary-source verification step.",
     ),
     "5": WorkflowSpec(
         ["Competency", "Question", "Strong signal", "Red flag", "Score"],
@@ -83,7 +83,7 @@ SPECS: dict[str, WorkflowSpec] = {
     ),
     "7": WorkflowSpec(
         ["Segment", "RFM", "Affinity", "Customers", "Top SKU", "Send window", "Control sales", "Treatment sales", "Lift"],
-        "Derive useful customer segments from the supplied data pack and its (synthetic) transactions log. For each segment give an RFM profile (recency/frequency/monetary tier, e.g. 'R4 F5 M3') and the dominant category affinity (feet vs muscle/legs buyers). Set the send window from season-of-purchase and the sport calendar. Clearly distinguish synthetic or illustrative values from observed data and calculate treatment-versus-control lift consistently.",
+        "Use the Target-segment labels from the structured product dataset (section 3) as the Segment values — do not invent new segment names. For each segment give an RFM profile (recency/frequency/monetary tier, e.g. 'R4 F5 M3'), the dominant category affinity (feet vs muscle/legs buyers), and the top SKU it buys. Set Send window as a concrete month range using these timing rules: callus SKUs (Hornhaut) -> sandal season Mar-Jun; warming and bath SKUs -> winter Nov-Feb; Mobil and Eisspray -> the sport calendar (Aug-May); otherwise convert the SKU's section-3 peak season to months. Include at least one callus/sandal, one winter warming/bath, and one sport segment. Mark all sales and lift figures as synthetic, and calculate lift consistently as (Treatment - Control) / Control.",
     ),
     "8": WorkflowSpec(
         ["SKU", "Product", "Base", "Signals", "Adjustment", "Recommended", "Guardrail"],
@@ -619,28 +619,38 @@ def _render_reel(run_id: str, rows: list[dict[str, Any]]) -> str | None:
     overlays: list[str] = []
     for index, row in enumerate(scenes):
         overlays += _scene_overlays(str(row.get("Copy", "")), index * seg, (index + 1) * seg)
+    chain = ",".join(overlays) if overlays else "null"
+
+    # Royalty-free synthesized ambient bed (soft triad with a slow swell), faded in and out.
+    audio_expr = "(0.06*sin(2*PI*220*t)+0.05*sin(2*PI*330*t)+0.045*sin(2*PI*440*t))*(0.7+0.3*sin(2*PI*0.25*t))"
+    audio_input = ["-f", "lavfi", "-t", "15", "-i", f"aevalsrc={audio_expr}:s=44100"]
+    audio_filter = "afade=t=in:d=1.5,afade=t=out:st=13.5:d=1.5"
+    audio_out = ["-c:a", "aac", "-b:a", "128k", "-shortest"]
 
     backgrounds = _reel_backgrounds(output_dir, scenes)
     if backgrounds:
         inputs: list[str] = []
         for image in backgrounds:
             inputs += ["-loop", "1", "-t", f"{seg:.2f}", "-i", str(image)]
+        audio_idx = len(backgrounds)
         scaled = ";".join(
             f"[{idx}:v]scale={_REEL_W}:{_REEL_H}:force_original_aspect_ratio=increase,"
             f"crop={_REEL_W}:{_REEL_H},setsar=1,fps=30[v{idx}]"
             for idx in range(len(backgrounds))
         )
         concat_inputs = "".join(f"[v{idx}]" for idx in range(len(backgrounds)))
-        chain = ",".join(overlays) if overlays else "null"
         filter_complex = (
-            f"{scaled};{concat_inputs}concat=n={len(backgrounds)}:v=1:a=0[bg];[bg]{chain}[out]"
+            f"{scaled};{concat_inputs}concat=n={len(backgrounds)}:v=1:a=0[bg];"
+            f"[bg]{chain}[vout];[{audio_idx}:a]{audio_filter}[a]"
         )
-        command = [ffmpeg, "-y", *inputs, "-filter_complex", filter_complex, "-map", "[out]",
-                   "-r", "30", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(output)]
+        command = [ffmpeg, "-y", *inputs, *audio_input, "-filter_complex", filter_complex,
+                   "-map", "[vout]", "-map", "[a]", "-r", "30", "-c:v", "libx264",
+                   "-pix_fmt", "yuv420p", *audio_out, str(output)]
     else:
-        vf = ",".join(overlays) if overlays else "null"
+        filter_complex = f"[0:v]{chain}[vout];[1:a]{audio_filter}[a]"
         command = [ffmpeg, "-y", "-f", "lavfi", "-i", f"color=c=0x123C2F:s={_REEL_W}x{_REEL_H}:d=15",
-                   "-vf", vf, "-r", "30", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(output)]
+                   *audio_input, "-filter_complex", filter_complex, "-map", "[vout]", "-map", "[a]",
+                   "-r", "30", "-c:v", "libx264", "-pix_fmt", "yuv420p", *audio_out, str(output)]
     try:
         subprocess.run(command, check=True, capture_output=True, timeout=180)
         return output.name

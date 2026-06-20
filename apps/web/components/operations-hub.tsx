@@ -3,7 +3,7 @@
 import {
   Activity, AlertTriangle, BadgeCheck, BarChart3, BriefcaseBusiness, Building2,
   Check, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardCheck, Clock,
-  FileCheck2, FileText, Film, Inbox, LayoutDashboard, Loader2, Lock, Menu,
+  Download, FileCheck2, FileText, Film, Inbox, LayoutDashboard, Loader2, Lock, Menu,
   MoreHorizontal, Play, RefreshCcw, Search, ShieldAlert, ShieldCheck, ShieldX,
   Sparkles, Users, X, XCircle,
 } from "lucide-react";
@@ -594,19 +594,29 @@ function ModuleWorkspace({ module, latestRun, onRun, onApprove, onAction, runnin
       ? run.result.table.rows.map((row) => row.Status === "Review" ? { ...row, Status: "Approved" } : row)
       : run.result.table.rows;
     const reel = module.id === "6" ? run.result.artifacts?.find((a: string) => a.endsWith(".mp4")) : undefined;
+    const reelUrl = reel ? `${API_URL}/api/runs/${run.id}/artifacts/${encodeURIComponent(reel)}` : "";
     return (
       <div className="space-y-3">
         {reel && (
           <div className="panel">
             <div className="panel-header">
               <span className="font-semibold">Generated reel</span>
-              <Badge tone="blue">9:16 · 15s</Badge>
+              <div className="flex items-center gap-2">
+                <Badge tone="blue">9:16 · 15s · audio</Badge>
+                <a
+                  href={reelUrl}
+                  download
+                  className="inline-flex h-7 items-center gap-1.5 rounded-[5px] border border-[#cbd0c9] bg-white px-2.5 text-[11px] font-medium text-[#1a201d] hover:bg-[#f5f6f4]"
+                >
+                  <Download size={12} /> Download MP4
+                </a>
+              </div>
             </div>
             <div className="flex justify-center p-3">
               <video
                 controls
                 className="max-h-[520px] rounded-[6px] bg-black"
-                src={`${API_URL}/api/runs/${run.id}/artifacts/${encodeURIComponent(reel)}`}
+                src={reelUrl}
               />
             </div>
           </div>

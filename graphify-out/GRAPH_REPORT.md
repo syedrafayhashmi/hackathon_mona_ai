@@ -1,7 +1,7 @@
 # Graph Report - hackathon_problems_20260620  (2026-06-20)
 
 ## Corpus Check
-- 31 files · ~554,841 words
+- 31 files · ~555,009 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `20d41b55`
+- Built from commit: `b1112a6e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

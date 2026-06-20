@@ -1167,7 +1167,7 @@
       "label": "_create_artifacts()",
       "file_type": "code",
       "source_file": "apps/api/app/workflows.py",
-      "source_location": "L651",
+      "source_location": "L661",
       "_origin": "ast",
       "id": "app_workflows_create_artifacts",
       "community": 7,
@@ -1177,7 +1177,7 @@
       "label": "execute_workflow()",
       "file_type": "code",
       "source_file": "apps/api/app/workflows.py",
-      "source_location": "L669",
+      "source_location": "L679",
       "_origin": "ast",
       "id": "app_workflows_execute_workflow",
       "community": 7,
@@ -1287,9 +1287,9 @@
       "label": "Execute one Gemini-backed agent graph and return its validated business result.",
       "file_type": "rationale",
       "source_file": "apps/api/app/workflows.py",
-      "source_location": "L677",
+      "source_location": "L687",
       "_origin": "ast",
-      "id": "app_workflows_rationale_677",
+      "id": "app_workflows_rationale_687",
       "community": 7,
       "norm_label": "execute one gemini-backed agent graph and return its validated business result."
     },
@@ -1677,7 +1677,7 @@
       "label": "OperationsHub()",
       "file_type": "code",
       "source_file": "apps/web/components/operations-hub.tsx",
-      "source_location": "L816",
+      "source_location": "L826",
       "_origin": "ast",
       "id": "components_operations_hub_operationshub",
       "community": 1,
@@ -4919,9 +4919,9 @@
       "source_file": "apps/api/app/main.py",
       "source_location": "L247",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "app_main_rationale_247",
-      "target": "app_main_send_shift_outreach",
-      "confidence_score": 1.0
+      "target": "app_main_send_shift_outreach"
     },
     {
       "relation": "calls",
@@ -6773,9 +6773,9 @@
       "source_file": "apps/api/app/workflows.py",
       "source_location": "L207",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "app_workflows_build_agent_task",
-      "target": "app_workflows_read_upload",
-      "confidence_score": 1.0
+      "target": "app_workflows_read_upload"
     },
     {
       "relation": "calls",
@@ -7187,9 +7187,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/app/workflows.py",
-      "source_location": "L677",
+      "source_location": "L687",
       "weight": 1.0,
-      "source": "app_workflows_rationale_677",
+      "source": "app_workflows_rationale_687",
       "target": "app_workflows_execute_workflow",
       "confidence_score": 1.0
     },
@@ -8890,5 +8890,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "20d41b55c1c538602e2ae16d1dfe582deabb3c4d"
+  "built_at_commit": "b1112a6eb9baa3c99d1126120623e340e7298199"
 }

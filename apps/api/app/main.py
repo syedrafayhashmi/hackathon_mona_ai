@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 
 from .config import (
-    ALLOWED_EXTENSIONS, ARTIFACT_ROOT, GEMINI_FAST_MODEL, GEMINI_IMAGE_MODEL,
+    ALLOWED_EXTENSIONS, ARTIFACT_ROOT, CORS_ORIGINS, GEMINI_FAST_MODEL, GEMINI_IMAGE_MODEL,
     GEMINI_MAX_CONCURRENCY, MAX_UPLOAD_BYTES,
 )
 from .gemini import GeminiGenerationError, GeminiRateLimitError, GeminiUnavailableError, gemini
@@ -38,7 +38,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="Mona AI Enterprise Operations API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

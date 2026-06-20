@@ -9,6 +9,7 @@ services:
       GEMINI_MAX_RETRIES: ${GEMINI_MAX_RETRIES:-4}
       GEMINI_MAX_CONCURRENCY: ${GEMINI_MAX_CONCURRENCY:-5}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
       DATA_ROOT: /workspace/data
       RUNTIME_ROOT: /workspace/runtime
     volumes:
